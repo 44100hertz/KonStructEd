@@ -1,0 +1,39 @@
+* Top priority -- cleanups and tech debt
+** DONE Make all binary ops into N-ary ops, FORGET associativity
+** DONE Remove unsolved operator
+** DONE Remove unknown binop
+** DONE Make "." into an N-ary operator like the rest.
+** DONE Write tests for function calls, fix accordingly
+** DONE Write tests for indexing, fix accordingly
+** DONE Set up unit testing library
+** DONE Test tree parsing
+** DONE Test symmetry between parsed tree and written tree
+* High priority
+** DONE Add indexing dot
+** TODO Add floats to lexer
+** TODO Add strings to lexer
+** TODO Add string escapes
+** DONE Write tree-to-code convertor
+** DONE Add function calls
+** TODO Add statements
+** TODO Add variable assignments
+** TODO Add lists
+** TODO Add objects
+* Structure editing
+** TODO Add structure cursor
+** TODO Add mouse cursor
+** TODO Add deletions
+** TODO Add unwrapping
+** TODO Add insertions
+** TODO Add wrapping
+* Low priority
+** TODO Clean up Tree rendering code by splitting into multiple elements with shared styles
+** recovery system for unmatched parens
+*** TODO MVP: For
+*** TODO MVP: For expressions, pretend paren doesn't exist
+*** TODO MVP: For function calls, close after item after last comma
+** TODO Add multiple variable assignments
+** Whitespace handling
+*** TODO Add comments
+*** TODO Notice and preserve line breaks
+*** TODO Take note of line breaks, decide on horizontal or vertical form for expressions

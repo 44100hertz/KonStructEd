@@ -1,0 +1,96 @@
+.node {
+    color: white;
+
+    font-size: 18px;
+    min-width: 1em;
+    width: fit-content;
+    height: fit-content;
+    margin: 0.2em;
+    padding: 0.2em;
+
+    font-family: Fira sans;
+    text-shadow: 0px 1px 2px black;
+    white-space: nowrap;
+
+    border-radius: 0.5em;
+    border-style: solid;
+    border-width: 0.1em 0 0.1em 0;
+    border-color: #fff8 transparent #0008 transparent;
+
+    box-shadow: 0 0.05em 0.1em black;
+}
+
+.node > .children {
+    font-size: 18px;
+    display: flex;
+    flex-direction: row;
+    margin: 0;
+}
+
+.node.operator > .value {
+    font-family: monospace;
+}
+
+.node.operator.placeholder > .value {
+    display: none;
+}
+
+.node.number {
+    font-weight: bold;
+}
+
+.node.operator, .node.ident, .node.number {
+    text-align: center;
+}
+
+.node.indexList {
+    display: flex;
+    border: 0.1em solid #fff8;
+    padding: 0.1em;
+    border-radius: 0.7em;
+    margin: 0.1em;
+    box-shadow: none;
+ }
+
+.node.indexList > .value {
+    display: none;
+}
+
+.node.indexList > .children {
+    align-items: end;
+}
+
+.node.funCall > .children {
+    align-items: center;
+}
+
+.node.placeholder {
+    background: #0004 !important;
+    border-color: #0008 transparent #fff8 transparent;
+    min-width: 1em;
+    min-height: 1em;
+    box-shadow: none;
+}
+
+.node.placeholder::after,
+.node.unknown > .value::after {
+    content: "<?>";
+    color: red;
+}
+
+.node .children .args {
+    min-width: 1em;
+    min-height: 1.2em;
+    height: fit-content;
+    margin: 0.2em;
+    padding: 0.2em;
+
+    display: flex;
+    align-items: center;
+    background: #0002;
+
+    border-style: solid;
+    border-width: 0.1em 0 0.1em 0;
+    border-color: #0008 transparent #fff8 transparent;
+    border-radius: 0.7em;
+}
