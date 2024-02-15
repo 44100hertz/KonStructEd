@@ -1,4 +1,5 @@
-import { createContext, createSignal, type Accessor, type Setter, type Context } from "solid-js";
+import { createContext, createSignal, createEffect,
+         type Accessor, type Setter, type Context } from "solid-js";
 import { stringToTree, type Expression } from "~/parser/parser";
 import ExpressionNode from "~/components/ExpressionNode";
 
@@ -14,9 +15,12 @@ export default function Editor() {
 
     const TreeContext: Context<TreeState> = createContext({tree, selection, setSelection});
 
-    function reparse() {
-        setTree(stringToTree(`1+2*${Math.floor(10*Math.random())}`));
+    function reparse(ev: KeyboardEvent) {
+        const content = ev.target.value;
+        setTree(stringToTree(content));
     }
+    const placeholder = "10 * math.max(200, 5^5)";
+    setTree(stringToTree(placeholder));
 
     return (
         <TreeContext.Provider value={{
@@ -24,8 +28,10 @@ export default function Editor() {
             selection,
             setSelection,
         }}>
-            <textarea onKeyUp={reparse}/>
-            <ExpressionNode path={[]} context={TreeContext}/>
+            <textarea onKeyUp={reparse}>
+                {placeholder}
+            </textarea>
+            <ExpressionNode path={[]} context={TreeContext} node={tree()}/>
             <pre />
         </TreeContext.Provider>
     )
