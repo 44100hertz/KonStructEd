@@ -12,6 +12,7 @@
     text-shadow: 0px 1px 2px black;
     white-space: nowrap;
 
+    background: lch(35 50 calc(40 * var(--depth) + 20));
     border-radius: 0.5em;
     border-style: solid;
     border-width: 0.1em 0 0.1em 0;
@@ -20,19 +21,8 @@
     box-shadow: 0 0.05em 0.1em black;
 }
 
-.node > .children {
-    font-size: 18px;
-    display: flex;
-    flex-direction: row;
-    margin: 0;
-}
-
-.node.operator > .value {
-    font-family: monospace;
-}
-
-.node.operator.placeholder > .value {
-    display: none;
+.node.leaf {
+    background: lch(45 50 calc(40 * var(--depth) + 20));
 }
 
 .node.number {
@@ -41,6 +31,17 @@
 
 .node.operator, .node.ident, .node.number {
     text-align: center;
+}
+
+.node.operator > .op {
+    font-family: monospace;
+}
+
+.node > .children {
+    font-size: 18px;
+    display: flex;
+    flex-direction: row;
+    margin: 0;
 }
 
 .node.indexList {
@@ -52,30 +53,13 @@
     box-shadow: none;
  }
 
-.node.indexList > .value {
-    display: none;
-}
-
 .node.indexList > .children {
     align-items: end;
 }
 
-.node.funCall > .children {
+.node.funCall {
+    display: flex;
     align-items: center;
-}
-
-.node.placeholder {
-    background: #0004 !important;
-    border-color: #0008 transparent #fff8 transparent;
-    min-width: 1em;
-    min-height: 1em;
-    box-shadow: none;
-}
-
-.node.placeholder::after,
-.node.unknown > .value::after {
-    content: "<?>";
-    color: red;
 }
 
 .node .children .args {
@@ -93,4 +77,22 @@
     border-width: 0.1em 0 0.1em 0;
     border-color: #0008 transparent #fff8 transparent;
     border-radius: 0.7em;
+}
+
+.node.placeholder {
+    background: #0004 !important;
+    border-color: #0008 transparent #fff8 transparent;
+    min-width: 1em;
+    min-height: 1em;
+    box-shadow: none;
+}
+
+.node.operator.placeholder > .op {
+    display: none;
+}
+
+.node.placeholder::after,
+.node.unknown > .op::after {
+    content: "<?>";
+    color: red;
 }

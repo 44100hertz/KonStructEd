@@ -14,7 +14,7 @@ export type Expression =
     | {kind: "funCall", value: Expression[] }
 
 export type ExpressionKind = Expression["kind"];
-type EKind<T> = Extract<Expression, {kind: T}>;
+export type EKind<T> = Extract<Expression, {kind: T}>;
 
 export function stringToTree(str: string): Expression {
     try {
