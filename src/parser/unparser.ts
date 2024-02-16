@@ -4,6 +4,8 @@ export function treeToString(tree: Expression): string {
     switch (tree.kind) {
         case "placeholder":
             return "";
+        case "string":
+            return '"' + tree.value + '"';
         case "number":
         case "ident":
         case "unknown":

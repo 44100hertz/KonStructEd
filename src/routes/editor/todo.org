@@ -10,9 +10,7 @@
 ** DONE Test symmetry between parsed tree and written tree
 * Parser features
 ** DONE Add indexing dot
-** TODO Add floats to lexer
-** TODO Add strings to lexer
-** TODO Add string escapes
+** DONE Add strings to lexer
 ** DONE Write tree-to-code convertor
 ** DONE Add function calls
 ** TODO Add statements
@@ -28,6 +26,8 @@
 ** TODO Add insertions
 ** TODO Add wrapping
 * Low priority
+** TODO Add floats to lexer
+** TODO Process string escapes
 ** DONE Clean up Tree rendering code by splitting into multiple elements with shared styles
 ** recovery system for unmatched parens
 *** TODO MVP: For

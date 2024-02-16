@@ -1,4 +1,4 @@
-import { For, Switch, Match } from "solid-js";
+import { For, Show, Switch, Match } from "solid-js";
 
 import type { Expression, EKind } from "~/parser/parser";
 import { type TreeState } from "~/editor/tree";
@@ -40,7 +40,7 @@ export function NodeContent(props: NodeProps) {
       <Match when={props.node.kind == "op" && props.node.op != "funCall"}>
         <Operator {...props as any}/>
       </Match>
-      <Match when={props.node.kind == "ident" || props.node.kind == "number" || props.node.kind == "unknown"}>
+      <Match when={props.node.kind == "ident" || props.node.kind == "number" || props.node.kind == "string" || props.node.kind == "unknown"}>
         <Value {...props as any}/>
       </Match>
     </Switch>
@@ -49,11 +49,16 @@ export function NodeContent(props: NodeProps) {
 
 const Placeholder = () => <div class="node leaf placeholder"></div>;
 
-function Value(props: NodePropsLimitedTo<'number' | 'ident' | 'unknown'>) {
+function Value(props: NodePropsLimitedTo<'number' | 'string' | 'ident' | 'unknown'>) {
   return (
+    <>
     <div classList={{node: true, leaf: true, [props.node.kind]: true}}>
       {props.node.value}
     </div>
+    <Show when={'error' in props.node}>
+      <div class="error">{String((props as any).node.error)}</div>
+    </Show>
+    </>
   )
 }
 

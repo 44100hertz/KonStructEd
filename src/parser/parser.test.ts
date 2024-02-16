@@ -6,6 +6,7 @@ const num = makeExpr.number;
 const id = makeExpr.ident;
 const ph = makeExpr.placeholder;
 const op = makeExpr.op;
+const str = makeExpr.string;
 const pop = (o: Operator, ...args: Expression[]) => ({...op(o,...args), parenthesized: true});
 const call = (...args: Expression[]) => makeExpr.op("funCall", ...args);
 
@@ -39,6 +40,9 @@ describe.each([
      call(op(".", call(
          op(".", id("list"), id("filter")), id("a")
      ), id("flatten")), ph())],
+    ["empty string 1", "''", str('')],
+    ["empty string 2", '""', str('')],
+    ["hello string", '"hello, world"', str('hello, world')],
 ])("%s", (_, str, result) => {
     test("parse", () => {
         expect(stringToTree(str)).toMatchObject(result);

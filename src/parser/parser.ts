@@ -9,7 +9,8 @@ export type Expression =
     | {kind: "placeholder"}
     | {kind: "number", value: number}
     | {kind: "ident", value: string}
-    | {kind: "unknown", value: string}
+    | {kind: "string", value: string}
+    | {kind: "unknown", value: string, error?: any }
     | {kind: "op", op: Operator, args: Expression[], parenthesized: boolean }
 
 export type ExpressionKind = Expression["kind"];
@@ -21,7 +22,7 @@ export function stringToTree(str: string): Expression {
         const tree = parseExpression(tokens);
         return tree;
     } catch (err) {
-        return makeExpr.ident(String(err));
+        return makeExpr.unknown(str, err);
     }
 }
 
@@ -50,6 +51,7 @@ function parseExpression(tokens: TokenIter, flags: ParseExprFlags = {}): Express
             break;
             case "number":
             case "ident":
+            case "string":
                 tree = appendValue(tree, makeExpr[token.kind](token.text));
                 break;
             case "operator": {
@@ -208,15 +210,20 @@ export const makeExpr = {
         kind: "ident",
         value: text,
     }),
+    string: (text: string): EKind<"string"> => ({
+        kind: "string",
+        value: text,
+    }),
     op: (op: Operator, ...args: Expression[]): EKind<"op"> => ({
         kind: "op",
         op,
         args,
         parenthesized: false,
     }),
-    unknown: (text: string): EKind<"unknown"> => ({
+    unknown: (text: string, error?: any): EKind<"unknown"> => ({
         kind: "unknown",
         value: text,
+        error,
     }),
 };
 

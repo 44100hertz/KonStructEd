@@ -1,6 +1,6 @@
 import { unaryOps, binaryOps, symbols, keywords } from './defs';
 
-export type TokenKind = 'unknown' | 'white' | 'number' | 'operator' | 'ident' | 'keyword' | 'symbol';
+export type TokenKind = 'unknown' | 'white' | 'number' | 'string' | 'operator' | 'ident' | 'keyword' | 'symbol';
 
 export type Token = {
     kind: TokenKind,
@@ -26,10 +26,15 @@ const tokenKinds: Record<Extract<TokenKind, 'white' | 'number' | 'ident'>, (s: s
 
 export function lexString(text: string, position = 0): Token[] {
     let matchKind: TokenKind = "unknown";
-    if (position === text.length) {
+    if (position >= text.length) {
         return [];
     }
+    if (text.charAt(position) == "'" || text.charAt(position) == '"') {
+        const str = munchString(text, position);
+        return [{kind: "string", text: str}, ...lexString(text, position + str.length + 2)]
+    }
     for (let end = position+1;; ++end) {
+
         let token = text.slice(position, end);
         const maybeKind = (
             Object.entries(tokenKinds).find(([, match]) => match(token))
@@ -67,4 +72,16 @@ export function lexString(text: string, position = 0): Token[] {
             }
         }
     }
+}
+
+function munchString(text: string, position: number): string {
+    let end = position+1;
+    let opening = text.charAt(position);
+    while (text.charAt(end) !== opening) {
+        if (end >= text.length) {
+            throw new Error("Unclosed quote");
+        }
+        ++end;
+    }
+    return text.slice(position+1, end);
 }

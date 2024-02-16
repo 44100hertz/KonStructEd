@@ -35,6 +35,14 @@
     font-weight: bold;
 }
 
+.node.string::before, .node.string::after {
+    content: "\"";
+}
+
+.node.unknown {
+    background: black;
+}
+
 .node.op, .node.leaf {
     text-align: center;
 }
@@ -98,4 +106,9 @@
 
 .node.funCall > .args > :only-child > .node.placeholder::after {
     content: "";
+}
+
+.error {
+    margin: 1em 0;
+    color: red;
 }
