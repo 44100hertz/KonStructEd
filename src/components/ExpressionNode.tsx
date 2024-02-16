@@ -1,25 +1,24 @@
-import { For, Switch, Match, useContext, type Context } from "solid-js";
-import type { Expression, EKind } from "~/parser/parser";
-import "./ExpressionNode.css";
+import { For, Switch, Match } from "solid-js";
 
-import { type TreeState } from "~/routes/editor/index";
+import type { Expression, EKind } from "~/parser/parser";
+import { type TreeState } from "~/editor/tree";
+
+import "./ExpressionNode.css";
 
 export type NodeProps = {
   node: Expression,
-  context: Context<TreeState>,
+  tree: TreeState,
   path: number[],
 }
 
 type NodePropsLimitedTo<T> = Omit<NodeProps, 'node'> & { node: EKind<T> };
 
 export default function Node(props: NodeProps) {
-  const context = useContext(props.context);
-
-  const selected = () => context.selection().length == props.path.length &&
-                       context.selection().every((v,i) => props.path[i] == v);
+  const selected = () => props.tree.selection.path().length == props.path.length &&
+                       props.tree.selection.path().every((v,i) => props.path[i] == v);
 
   const onClick = (ev: MouseEvent) => {
-    context.setSelection(props.path);
+    props.tree.selection.setPath(props.path);
     ev.stopPropagation();
   }
 

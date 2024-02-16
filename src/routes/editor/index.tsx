@@ -1,42 +1,40 @@
-import { createContext, createSignal, createEffect,
-         type Accessor, type Setter, type Context } from "solid-js";
+import { createSignal, onMount, onCleanup } from "solid-js";
 import { stringToTree, type Expression } from "~/parser/parser";
+import { handleKey } from "~/editor/keys"
+import { type TreeState, TreeSelection } from "~/editor/tree";
 import ExpressionNode from "~/components/ExpressionNode";
 import "./style.css";
 
-export type TreeState = {
-    tree: Accessor<Expression>,
-    selection: Accessor<number[]>,
-    setSelection: Setter<number[]>,
-};
-
 export default function Editor() {
     const [tree, setTree] = createSignal<Expression>({kind: "placeholder"});
-    const [selection, setSelection] = createSignal<number[]>([])
-
-    const TreeContext: Context<TreeState> = createContext({tree, selection, setSelection});
+    const selection = new TreeSelection();
+    const treeState: TreeState = { tree, selection };
 
     function reparse(ev: any) {
-        const content = ev.target.value;
-        setTree(stringToTree(content));
+      const content = ev.target.value;
+      setTree(stringToTree(content));
     }
     const placeholder = "10 * math.max(200, 5^5)";
     setTree(stringToTree(placeholder));
 
-    return (
-        <>
-          <h1>Structure Editor</h1>
-          <TreeContext.Provider value={{
-              tree,
-              selection,
-              setSelection,
-          }}>
-            <textarea onKeyUp={reparse}>
-              {placeholder}
-            </textarea>
-            <ExpressionNode path={[]} context={TreeContext} node={tree()}/>
-            <pre />
-          </TreeContext.Provider>
-        </>
+    const _handleKey = (ev: KeyboardEvent) => handleKey(treeState, ev);
+    onMount(() => {
+      window.addEventListener('keydown', _handleKey);
+    })
+    onCleanup(() => {
+      window.removeEventListener('keydown', _handleKey);
+    })
+
+  return (
+    <div>
+      <h1>Structure Editor</h1>
+      <textarea onKeyUp={reparse}>
+        {placeholder}
+      </textarea>
+      <div style={{border: "1px solid white", padding: "2em"}}>
+        <ExpressionNode path={[]} tree={treeState} node={tree()}/>
+      </div>
+      <pre />
+    </div>
     )
 }
