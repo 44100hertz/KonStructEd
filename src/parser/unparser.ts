@@ -27,7 +27,8 @@ export function treeToString(tree: Expression): string {
             // Binary operator
             const op = tree.op == "unknown" ? " " :
                 tree.op == "." || tree.op == "^" ? tree.op :
-                ` ${tree.op} `;
+                tree.op == "," ? tree.op + ' ' :
+                ' ' + tree.op + ' ';
             return parenthesize(tree, tree.args.map(treeToString).join(op));
         }
     }
