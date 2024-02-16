@@ -1,21 +1,34 @@
-import { createSignal, onMount, onCleanup } from "solid-js";
-import { stringToTree, type Expression } from "~/parser/parser";
-import { handleKey } from "~/editor/keys"
+import { createEffect, onMount, onCleanup } from "solid-js";
+import { stringToTree } from "~/parser/parser";
+import { treeToString } from "~/parser/unparser";
 import { Tree } from "~/editor/tree";
 import ExpressionNode from "~/components/ExpressionNode";
 import "./style.css";
 
 export default function Editor() {
     const tree = new Tree();
+    let textArea: HTMLTextAreaElement | undefined;
 
     function reparse(ev: any) {
-      const content = ev.target.value;
-      tree.setTree(stringToTree(content));
+      if (textArea) {
+        tree.setTree(stringToTree(textArea.value));
+      }
     }
+
+    createEffect(() => {
+      if (textArea && textArea !== document.activeElement) {
+        textArea.value = treeToString(tree.tree())
+      }
+    })
+
     const placeholder = "10 * math.max(200, 5^5)";
     tree.setTree(stringToTree(placeholder));
 
-    const _handleKey = (ev: KeyboardEvent) => tree.handleKey(ev);
+    const _handleKey = (ev: KeyboardEvent) => {
+      if (textArea !== document.activeElement) {
+        tree.handleKey(ev);
+      }
+    }
     onMount(() => {
       window.addEventListener('keydown', _handleKey);
     })
@@ -26,7 +39,7 @@ export default function Editor() {
   return (
     <div>
       <h1>Structure Editor</h1>
-      <textarea onKeyUp={reparse}>
+      <textarea onKeyUp={reparse} ref={textArea}>
         {placeholder}
       </textarea>
       <div style={{border: "1px solid white", padding: "2em"}}>
