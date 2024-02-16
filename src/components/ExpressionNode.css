@@ -35,7 +35,7 @@
     font-weight: bold;
 }
 
-.node.operator, .node.ident, .node.number {
+.node.operator, .node.leaf {
     text-align: center;
 }
 
@@ -57,6 +57,10 @@
     margin: 0.1em;
     box-shadow: none;
  }
+
+.node.indexList > .op {
+    display: none;
+}
 
 .node.indexList > .children {
     align-items: end;
@@ -92,12 +96,8 @@
     box-shadow: none;
 }
 
-.node.operator.placeholder > .op {
-    display: none;
-}
-
 .node.placeholder::after,
-.node.unknown > .op::after {
+.node.unknownOp > .op::after {
     content: "<?>";
     color: red;
 }

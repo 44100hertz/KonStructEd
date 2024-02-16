@@ -58,31 +58,28 @@ function Value(props: NodePropsLimitedTo<'number' | 'ident' | 'unknown'>) {
 }
 
 function Operator(props: NodePropsLimitedTo<'operator'>) {
-  let value = props.node.op as string;
-  let extraStyle: string = "";
-  let between: string = "";
-  switch (props.node.op) {
-    case "unknown":
-      value = "";
-      extraStyle = "placeholder";
-      break;
-    case ".":
-      value = "";
-      extraStyle = "indexList";
-      between = ".";
-      break;
-    default:
-      if (props.node.parenthesized) value = '(' + value + ')';
-  }
+  const extraStyle = () => ({
+    unknown: "unknownOp",
+    ".": "indexList",
+   })[props.node.op as string] ?? "";
+
+  const printedValue = () =>
+    // Don't actually display word "unknown", this will be CSS defined
+    (props.node.op == "unknown") ? "" :
+    props.node.parenthesized ? '(' + props.node.op + ')' : props.node.op;
+
+  // Place this text between each node
+  const between = () => props.node.op == "." ? "." : "";
+
   return (
-    <div classList={{node: true, operator: true, [extraStyle]: true}}>
-      <div class="op">{value}</div>
+    <div classList={{node: true, operator: true, [extraStyle()]: true}}>
+      <div class="op">{printedValue()}</div>
       <div class="children">
         <For each={props.node.children}>
           {(child, index) =>
             <>
               <Node {...props} path={[...props.path, index()]} node={child} />
-              {index() != props.node.children.length-1 ? between : ''}
+              {index() != props.node.children.length-1 ? between() : ''}
             </>
           }
         </For>
@@ -93,6 +90,7 @@ function Operator(props: NodePropsLimitedTo<'operator'>) {
 
 function FunCall(props: NodePropsLimitedTo<"funCall">) {
   return (
+    // Place function itself in different position than arguments
     <div class="node funCall">
       <Node {...props} path={[...props.path, 0]} node={props.node.value[0]} />
       (
