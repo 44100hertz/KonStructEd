@@ -114,17 +114,16 @@ export class TreeSelection {
 
     // Move to child; return false if was not possible
     moveIn(): boolean {
-        let gotPath = true;
         this._pathLen++;
         if (this._pathLen >= this._path.length) {
             this._path.push(0);
         }
         if (!this.getNode()) {
-            gotPath = false;
             this._pathLen--;
+            return false;
         }
         this._navDepth = Math.max(this._navDepth, this._pathLen);
-        return gotPath;
+        return true;
     }
 
     getNode() {
@@ -153,10 +152,9 @@ export function getNodeAtPath(tree: Expression, path: number[]): Expression | nu
         return tree;
     }
     const [phead, ...ptail] = path;
-    if (tree.kind == "operator") {
-        return getNodeAtPath(tree.children[phead], ptail);
-    } else if (tree.kind == "funCall") {
-        return getNodeAtPath(tree.value[phead], ptail);
+    if (tree.kind == "op") {
+        return getNodeAtPath(tree.args[phead], ptail);
     }
+
     return null;
 }

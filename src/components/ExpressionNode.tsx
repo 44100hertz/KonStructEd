@@ -34,11 +34,11 @@ export default function Node(props: NodeProps) {
 export function NodeContent(props: NodeProps) {
   return (
     <Switch fallback={<Placeholder />}>
-      <Match when={props.node.kind == "operator"}>
-        <Operator {...props as any}/>
-      </Match>
-      <Match when={props.node.kind == "funCall"}>
+      <Match when={props.node.kind == "op" && props.node.op == "funCall"}>
         <FunCall {...props as any}/>
+      </Match>
+      <Match when={props.node.kind == "op" && props.node.op != "funCall"}>
+        <Operator {...props as any}/>
       </Match>
       <Match when={props.node.kind == "ident" || props.node.kind == "number" || props.node.kind == "unknown"}>
         <Value {...props as any}/>
@@ -57,7 +57,7 @@ function Value(props: NodePropsLimitedTo<'number' | 'ident' | 'unknown'>) {
   )
 }
 
-function Operator(props: NodePropsLimitedTo<'operator'>) {
+function Operator(props: NodePropsLimitedTo<'op'>) {
   const extraStyle = () => ({
     unknown: "unknownOp",
     ".": "indexList",
@@ -72,14 +72,16 @@ function Operator(props: NodePropsLimitedTo<'operator'>) {
   const between = () => props.node.op == "." ? "." : "";
 
   return (
-    <div classList={{node: true, operator: true, [extraStyle()]: true}}>
-      <div class="op">{printedValue()}</div>
-      <div class="children">
-        <For each={props.node.children}>
+    <div classList={{node: true, op: true, [extraStyle()]: true}}>
+      <div class="operator">{printedValue()}</div>
+      <div class="args">
+        <For each={props.node.args}>
           {(child, index) =>
             <>
               <Node {...props} path={[...props.path, index()]} node={child} />
-              {index() != props.node.children.length-1 ? between() : ''}
+              <div class="between">
+                {index() != props.node.args.length-1 ? between() : ''}
+              </div>
             </>
           }
         </For>
@@ -88,14 +90,14 @@ function Operator(props: NodePropsLimitedTo<'operator'>) {
   );
 }
 
-function FunCall(props: NodePropsLimitedTo<"funCall">) {
+function FunCall(props: NodePropsLimitedTo<"op">) {
   return (
     // Place function itself in different position than arguments
     <div class="node funCall">
-      <Node {...props} path={[...props.path, 0]} node={props.node.value[0]} />
+      <Node {...props} path={[...props.path, 0]} node={props.node.args[0]} />
       (
       <div class="args">
-        <For each={props.node.value.slice(1)}>
+        <For each={props.node.args.slice(1)}>
           {(child, index) =>
             <Node {...props} path={[...props.path, index()+1]} node={child} />
           }

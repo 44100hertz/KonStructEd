@@ -10,6 +10,7 @@ export const unaryOps = {
 } as const satisfies Record<string, Op>
 
 export const binaryOps = {
+    ",": { p: 0 },
     'or': { p: 1 },
     'and': { p: 2 },
     '<': { p: 3 },
@@ -44,7 +45,6 @@ export const symbols = {
     '{': true,
     '}': true,
     '=': true,
-    ',': true,
 } as const;
 
 export const keywords = {

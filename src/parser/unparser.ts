@@ -8,22 +8,25 @@ export function treeToString(tree: Expression): string {
         case "ident":
         case "unknown":
             return String(tree.value);
-        case "operator": {
-            if (tree.children.length == 1) {
-                const firstborn = tree.children[0];
-                const space = firstborn.kind == "operator"
-                    && getPrecedence(firstborn.op, firstborn.children.length > 1) > getPrecedence(tree.op, false)
-                    ? ' ' : '';
-                return parenthesize(tree, tree.op + space + treeToString(tree.children[0]));
+        case "op": {
+            // Function call
+            if (tree.op == "funCall") {
+                const [func, ...args] = tree.args;
+                return `${treeToString(func)}(${args.map(treeToString).join(', ')})`
             }
+            // Unary operator
+            if (tree.args.length == 1) {
+                const firstborn = tree.args[0];
+                const space = firstborn.kind == "operator"
+                    && getPrecedence(firstborn.op, firstborn.args.length > 1) > getPrecedence(tree.op, false)
+                    ? ' ' : '';
+                return parenthesize(tree, tree.op + space + treeToString(tree.args[0]));
+            }
+            // Binary operator
             const op = tree.op == "unknown" ? " " :
                 tree.op == "." || tree.op == "^" ? tree.op :
                 ` ${tree.op} `;
-            return parenthesize(tree, tree.children.map(treeToString).join(op));
-        }
-        case "funCall": {
-            const [func, ...args] = tree.value;
-            return `${treeToString(func)}(${args.map(treeToString).join(', ')})`
+            return parenthesize(tree, tree.args.map(treeToString).join(op));
         }
     }
 }

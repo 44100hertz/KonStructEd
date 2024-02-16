@@ -5,14 +5,14 @@ import { treeToString } from "./unparser";
 const num = makeExpr.number;
 const id = makeExpr.ident;
 const ph = makeExpr.placeholder;
-const op = makeExpr.operator;
+const op = makeExpr.op;
 const pop = (o: Operator, ...args: Expression[]) => ({...op(o,...args), parenthesized: true});
-const call = makeExpr.funCall;
+const call = (...args: Expression[]) => makeExpr.op("funCall", ...args);
 
 describe.each([
     ["nothing", "", ph()],
     ["add", "1+1", op("+", num(1), num(1))],
-    ["addmany", "1+2+3+4", {kind: "operator", op: "+", children: [1,2,3,4].map(num)}],
+    ["addmany", "1+2+3+4", op("+", ...[1,2,3,4].map(num))],
     ["unary minus", "-1", op("-", num(1))],
     ["triple minus", "---1", op("-", op("-", op("-", num(1))))],
     ["subtract neg", "1---2", op("-", num(1), op("-", op("-", num(2))))],
@@ -29,8 +29,8 @@ describe.each([
     ["placeholder on nums", "1 2", op("unknown", num(1), num(2))],
     ["unary precedence 1", "-1^2", op("-", op("^", num(1), num(2)))],
     ["unary precedence 2", "-1*2", op("*", op("-", num(1)), num(2))],
-    ["flattening", "1+2*3+4", {kind: "operator", op: "+", children: [num(1), op("*", num(2), num(3)), num(4)]}],
-    ["func", "call()", call(id("call"))],
+    ["flattening", "1+2*3+4", op("+", num(1), op("*", num(2), num(3)), num(4))],
+    ["func", "call()", call(id("call"), ph())],
     ["func with args", "sum(1,2,3)", call(id("sum"), ...[1,2,3].map(num))],
     ["curry", "max(1)(x)", call(call(id("max"), num(1)), id("x"))],
     ["index", "hello.world", op(".", id("hello"), id("world"))],
@@ -38,7 +38,7 @@ describe.each([
     ["chain call", "list.filter(a).flatten()",
      call(op(".", call(
          op(".", id("list"), id("filter")), id("a")
-     ), id("flatten")))],
+     ), id("flatten")), ph())],
 ])("%s", (_, str, result) => {
     test("parse", () => {
         expect(stringToTree(str)).toMatchObject(result);

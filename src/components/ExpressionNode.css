@@ -35,15 +35,15 @@
     font-weight: bold;
 }
 
-.node.operator, .node.leaf {
+.node.op, .node.leaf {
     text-align: center;
 }
 
-.node.operator > .op {
+.node.op > .operator {
     font-family: monospace;
 }
 
-.node > .children {
+.node > .args {
     font-size: 18px;
     display: flex;
     flex-direction: row;
@@ -58,34 +58,28 @@
     box-shadow: none;
  }
 
-.node.indexList > .op {
+.node.indexList > .operator {
     display: none;
 }
 
-.node.indexList > .children {
+.node.indexList > .args {
     align-items: end;
 }
 
 .node.funCall {
     display: flex;
     align-items: center;
+    font-size: 20px;
 }
 
-.node.funCall .args {
+.node.funCall > .args {
     min-width: 1em;
     min-height: 1.2em;
     height: fit-content;
-    margin: 0.2em;
-    padding: 0.2em;
+    margin: 0 0.1em;
 
     display: flex;
     align-items: center;
-    background: #0002;
-
-    border-style: solid;
-    border-width: 0.1em 0 0.1em 0;
-    border-color: #0008 transparent #fff8 transparent;
-    border-radius: 0.7em;
 }
 
 .node.placeholder {
@@ -97,7 +91,11 @@
 }
 
 .node.placeholder::after,
-.node.unknownOp > .op::after {
+.node.unknownOp > .operator::after {
     content: "<?>";
     color: red;
+}
+
+.node.funCall > .args > :only-child > .node.placeholder::after {
+    content: "";
 }
