@@ -2,6 +2,7 @@ import { createContext, createSignal, createEffect,
          type Accessor, type Setter, type Context } from "solid-js";
 import { stringToTree, type Expression } from "~/parser/parser";
 import ExpressionNode from "~/components/ExpressionNode";
+import "./style.css";
 
 export type TreeState = {
     tree: Accessor<Expression>,
@@ -15,7 +16,7 @@ export default function Editor() {
 
     const TreeContext: Context<TreeState> = createContext({tree, selection, setSelection});
 
-    function reparse(ev: KeyboardEvent) {
+    function reparse(ev: any) {
         const content = ev.target.value;
         setTree(stringToTree(content));
     }
@@ -23,16 +24,19 @@ export default function Editor() {
     setTree(stringToTree(placeholder));
 
     return (
-        <TreeContext.Provider value={{
-            tree,
-            selection,
-            setSelection,
-        }}>
+        <>
+          <h1>Structure Editor</h1>
+          <TreeContext.Provider value={{
+              tree,
+              selection,
+              setSelection,
+          }}>
             <textarea onKeyUp={reparse}>
-                {placeholder}
+              {placeholder}
             </textarea>
             <ExpressionNode path={[]} context={TreeContext} node={tree()}/>
             <pre />
-        </TreeContext.Provider>
+          </TreeContext.Provider>
+        </>
     )
 }

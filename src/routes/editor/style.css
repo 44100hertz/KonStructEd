@@ -1,0 +1,14 @@
+body {
+    background: black;
+    color: white;
+    max-width: 600px;
+    margin: 2em auto;
+}
+
+textarea {
+    width: 100%;
+    background: black;
+    color: white;
+    margin: 1em 0;
+    padding: 1em;
+}

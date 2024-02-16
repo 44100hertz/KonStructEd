@@ -2,7 +2,7 @@
     color: white;
     user-select: none;
 
-    font-size: 18px;
+    font-size: 14px;
     min-width: 1em;
     width: fit-content;
     height: fit-content;
@@ -23,7 +23,8 @@
 }
 
 .selected > .node {
-    outline: 0.15em solid yellow;
+    box-shadow: none;
+    outline: 0.18em solid yellow;
 }
 
 .node.leaf {
