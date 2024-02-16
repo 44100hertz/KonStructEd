@@ -1,4 +1,4 @@
-import { createSignal, type Accessor, type Setter } from "solid-js";
+import { createSignal, createEffect, on, type Accessor, type Setter } from "solid-js";
 import { type Expression, type EKind } from "../parser/parser";
 
 export type TreeState = {
@@ -20,8 +20,11 @@ export class TreeSelection {
     path: Accessor<number[]>;
     _setPath: Setter<number[]>;
 
-    constructor() {
+    constructor(
+        public tree: Accessor<Expression>
+    ) {
         [this.path, this._setPath] = createSignal<number[]>([]);
+        createEffect(on(tree, () => this.updateTree()));
     }
 
     // Update reactive path. CALL AFTER EVERY COMPLETE OPERATION!
@@ -46,43 +49,57 @@ export class TreeSelection {
         this.updatePath();
     }
 
+    // Keep selection from breaking in case of tree deletions
+    updateTree() {
+        while (!this.getNode()) {
+            if (this._path[this._pathLen-1] > 0) {
+                // First move to previous sibling
+                this._path[this._pathLen-1]--;
+            } else {
+                // If not, move up
+                --this._pathLen;
+            }
+        }
+        this.updatePath();
+    }
+
     // Move to previous sibling or cousin
-    moveUp(tree: Expression) {
+    moveUp() {
         this._path[this._pathLen-1]--;
         this._path = this.getPath(); // Truncate path
-        while (!getNodeAtPath(tree, this.getPath())) {
+        while (!this.getNode()) {
             // End of the road: Move to neighbor
             this._pathLen--;
             this._path[this._pathLen-1]--;
             this._path.pop();
         }
         // Try to go back as deep as before (but also move to last)
-        while (this._pathLen < this._navDepth && this.moveIn(tree)) {
-            this.moveToLast(tree);
+        while (this._pathLen < this._navDepth && this.moveIn()) {
+            this.moveToLast();
         };
     }
 
     // Move to next sibling or cousin
-    moveDown(tree: Expression) {
+    moveDown() {
         this._path[this._pathLen-1]++;
         this._path = this.getPath(); // Truncate path
-        while (!getNodeAtPath(tree, this.getPath())) {
+        while (!this.getNode()) {
             // End of the road: Move to neighbor
             this._pathLen--;
             this._path[this._pathLen-1]++;
             this._path.pop();
         }
         // Try to go back as deep as before
-        while (this._pathLen < this._navDepth && this.moveIn(tree));
+        while (this._pathLen < this._navDepth && this.moveIn());
     }
 
     // Move to last sibling
-    moveToLast(tree: Expression) {
+    moveToLast() {
         this._path = this.getPath(); // Truncate path
         // Keep on going until there's nothing
         do {
             this._path[this._pathLen-1]++;
-        } while (getNodeAtPath(tree, this._path));
+        } while (this.getNode());
         // Go back one
         this._path[this._pathLen-1]--;
     }
@@ -96,18 +113,22 @@ export class TreeSelection {
     }
 
     // Move to child; return false if was not possible
-    moveIn(tree: Expression): boolean {
+    moveIn(): boolean {
         let gotPath = true;
         this._pathLen++;
         if (this._pathLen >= this._path.length) {
             this._path.push(0);
         }
-        if (!getNodeAtPath(tree, this.getPath())) {
+        if (!this.getNode()) {
             gotPath = false;
             this._pathLen--;
         }
         this._navDepth = Math.max(this._navDepth, this._pathLen);
         return gotPath;
+    }
+
+    getNode() {
+        return getNodeAtPath(this.tree(), this.getPath());
     }
 
 }

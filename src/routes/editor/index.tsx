@@ -7,7 +7,7 @@ import "./style.css";
 
 export default function Editor() {
     const [tree, setTree] = createSignal<Expression>({kind: "placeholder"});
-    const selection = new TreeSelection();
+    const selection = new TreeSelection(tree);
     const treeState: TreeState = { tree, selection };
 
     function reparse(ev: any) {
