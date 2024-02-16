@@ -73,9 +73,6 @@ function Operator(props: NodePropsLimitedTo<'op'>) {
     (props.node.op == "unknown") ? "" :
     props.node.parenthesized ? '(' + props.node.op + ')' : props.node.op;
 
-  // Place this text between each node
-  const between = () => props.node.op == "." ? "." : "";
-
   return (
     <div classList={{node: true, op: true, [extraStyle()]: true}}>
       <div class="operator">{printedValue()}</div>
@@ -84,9 +81,6 @@ function Operator(props: NodePropsLimitedTo<'op'>) {
           {(child, index) =>
             <>
               <Node {...props} path={[...props.path, index()]} node={child} />
-              <div class="between">
-                {index() != props.node.args.length-1 ? between() : ''}
-              </div>
             </>
           }
         </For>
@@ -100,7 +94,6 @@ function FunCall(props: NodePropsLimitedTo<"op">) {
     // Place function itself in different position than arguments
     <div class="node funCall">
       <Node {...props} path={[...props.path, 0]} node={props.node.args[0]} />
-      (
       <div class="args">
         <For each={props.node.args.slice(1)}>
           {(child, index) =>
@@ -108,7 +101,6 @@ function FunCall(props: NodePropsLimitedTo<"op">) {
           }
         </For>
       </div>
-      )
     </div>
   )
 }
