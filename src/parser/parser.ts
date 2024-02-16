@@ -12,6 +12,7 @@ export type Expression =
     | {kind: "string", value: string}
     | {kind: "unknown", value: string, error?: any }
     | {kind: "op", op: Operator, args: Expression[], parenthesized: boolean }
+    | {kind: "obj", fields: [Expression, Expression][] }
 
 export type ExpressionKind = Expression["kind"];
 export type EKind<T> = Extract<Expression, {kind: T}>;
@@ -219,6 +220,10 @@ export const makeExpr = {
         op,
         args,
         parenthesized: false,
+    }),
+    pop: (op: Operator, ...args: Expression[]): EKind<"op"> => ({
+        ...makeExpr.op(op, ...args),
+        parenthesized: true,
     }),
     unknown: (text: string, error?: any): EKind<"unknown"> => ({
         kind: "unknown",

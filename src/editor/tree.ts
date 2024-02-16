@@ -213,14 +213,22 @@ function deleteSubtreeAtPath(tree: Expression, path: TreePath): Expression {
 
 function fixTree(tree: Expression): Expression {
     if (tree.kind == "op") {
-        if (tree.args.length == 0 && (tree.op == "." || tree.op == ",")) {
+        // Function w/o params
+        if (tree.op == "funCall" && tree.args[0].kind == "placeholder") {
+            if (tree.args.length > 1) {
+                return fixTree(makeExpr.pop(",", ...tree.args.slice(1)));
+            } else {
+                return makeExpr.placeholder();
+            }
+        } else if (tree.args.length == 0 && (tree.op == "." || tree.op == ",")) {
             return makeExpr.placeholder();
-        } else if (tree.args.length == 1 && tree.op == "." || tree.op == ",") {
-            return tree.args[0];
-        }
-        return {
-            ...tree,
-            args: tree.args.map(fixTree),
+        } else if (tree.args.length == 1 && (tree.op == "." || tree.op == ",")) {
+            return fixTree(tree.args[0]);
+        } else {
+            return {
+                ...tree,
+                args: tree.args.map(fixTree),
+            }
         }
     }
     return tree;

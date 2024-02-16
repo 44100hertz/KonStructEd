@@ -23,6 +23,7 @@
 ** DONE Add structure cursor
 ** DONE Add mouse cursor
 ** DONE Add deletions
+** TODO Write structure editing deletion tests
 ** TODO Add unwrapping
 ** TODO Add insertions
 ** TODO Add wrapping
