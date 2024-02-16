@@ -13,11 +13,12 @@
 ** DONE Add strings to lexer
 ** DONE Write tree-to-code convertor
 ** DONE Add function calls
+** TODO Add objects
+** TODO Add lists
 ** TODO Add statements
 ** TODO Add variable assignments
 ** TODO Add multiple variable assignments
-** TODO Add lists
-** TODO Add objects
+** TODO Add "if"
 * Structure editing
 ** DONE Add structure cursor
 ** DONE Add mouse cursor
@@ -27,12 +28,14 @@
 ** TODO Add wrapping
 * Low priority
 ** TODO Add floats to lexer
+** TODO add bracket index syntax x[...]
 ** TODO Process string escapes
 ** DONE Clean up Tree rendering code by splitting into multiple elements with shared styles
-** recovery system for unmatched parens
-*** TODO MVP: For
-*** TODO MVP: For expressions, pretend paren doesn't exist
-*** TODO MVP: For function calls, close after item after last comma
+** recovery system for unmatched parens or quotes
+*** TODO MVP: Simply place item until the expression parses valid.
+ - For missing close: start by closing immediately, then to end of expr.
+ - For missing open: start by closing at start of expr, then up to open.
+ - For quotes: start by searching for missing close, then missing open.
 ** Whitespace handling
 *** TODO Add comments
 *** TODO Notice and preserve line breaks

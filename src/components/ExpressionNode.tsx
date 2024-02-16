@@ -1,13 +1,13 @@
 import { For, Show, Switch, Match } from "solid-js";
 
 import type { Expression, EKind } from "~/parser/parser";
-import { type TreeState } from "~/editor/tree";
+import { type Tree } from "~/editor/tree";
 
 import "./ExpressionNode.css";
 
 export type NodeProps = {
   node: Expression,
-  tree: TreeState,
+  tree: Tree,
   path: number[],
 }
 

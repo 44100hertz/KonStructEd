@@ -1,15 +1,40 @@
 import { createSignal, createEffect, on, type Accessor, type Setter } from "solid-js";
 import { type Expression, type EKind } from "../parser/parser";
+import { keymap } from "./keymap";
 
-export type TreeState = {
-    tree: Accessor<Expression>,
-    selection: TreeSelection,
-};
+type TreePath = number[];
+
+export const actions = {
+    "MoveUp":   (tree) => { tree.selection.moveUp();   tree.selection.updatePath() },
+    "MoveDown": (tree) => { tree.selection.moveDown(); tree.selection.updatePath() },
+    "MoveOut":  (tree) => { tree.selection.moveOut();  tree.selection.updatePath() },
+    "MoveIn":   (tree) => { tree.selection.moveIn();   tree.selection.updatePath() },
+} as const satisfies Record<string, (tree: Tree) => void>;
+
+export type Action = keyof typeof actions;
+
+export class Tree {
+    tree: Accessor<Expression>;
+    setTree: Setter<Expression>;
+    selection: TreeSelection;
+
+    constructor () {
+        [this.tree, this.setTree] = createSignal<Expression>({kind: "placeholder"});
+        this.selection = new TreeSelection(this.tree);
+    }
+
+    handleKey(ev: KeyboardEvent) {
+        const action = keymap[ev.code];
+        if (action) {
+            actions[action](this);
+        }
+    }
+}
 
 export class TreeSelection {
     // Path and PathLen is Used so that when moving inward after moving outward,
     // you move inward back to the same node that you moved outward from.
-    _path: number[] = [];
+    _path: TreePath = [];
     _pathLen: number = 0;
     // NavDepth is used so that when moving left and right, the cursor will try
     // to stay at approximately the same depth. This is similar to how
@@ -17,13 +42,13 @@ export class TreeSelection {
     // remember that position, yet only go as far as it can.
     _navDepth: number = 0;
 
-    path: Accessor<number[]>;
-    _setPath: Setter<number[]>;
+    path: Accessor<TreePath>;
+    _setPath: Setter<TreePath>;
 
     constructor(
         public tree: Accessor<Expression>
     ) {
-        [this.path, this._setPath] = createSignal<number[]>([]);
+        [this.path, this._setPath] = createSignal<TreePath>([]);
         createEffect(on(tree, () => this.updateTree()));
     }
 
@@ -38,7 +63,7 @@ export class TreeSelection {
     }
 
     // Set tree-usable path to internal path state
-    setPath(path: number[]) {
+    setPath(path: TreePath) {
         // Only update internal path if it's different.
         // This preserves predictable navigation.
         if (!path.every((v,i) => v == this._path[i])) {
@@ -147,7 +172,7 @@ export function innerNodeEquals(a: Expression, b: any): boolean {
     return false;
 }
 
-export function getNodeAtPath(tree: Expression, path: number[]): Expression | null {
+export function getNodeAtPath(tree: Expression, path: TreePath): Expression | null {
     if (path.length == 0) {
         return tree;
     }
