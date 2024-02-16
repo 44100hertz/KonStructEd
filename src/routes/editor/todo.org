@@ -22,10 +22,12 @@
 * Structure editing
 ** DONE Add structure cursor
 ** DONE Add mouse cursor
-** TODO Add deletions
+** DONE Add deletions
 ** TODO Add unwrapping
 ** TODO Add insertions
 ** TODO Add wrapping
+** TODO Add moving/shifting
+** TODO Add drag-and-drop
 * Low priority
 ** TODO Add floats to lexer
 ** TODO add bracket index syntax x[...]

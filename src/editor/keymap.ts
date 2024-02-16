@@ -5,4 +5,6 @@ export const keymap: Record<KeyboardEvent["code"], Action> = {
     "ArrowRight": "MoveDown",
     "ArrowUp":    "MoveOut",
     "ArrowDown":  "MoveIn",
+    "Delete":     "Delete",
+    "Backspace":  "Delete",
 };

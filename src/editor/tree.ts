@@ -1,5 +1,6 @@
 import { createSignal, createEffect, on, type Accessor, type Setter } from "solid-js";
-import { type Expression, type EKind } from "../parser/parser";
+import { unaryOps, binaryOps } from "../parser/defs";
+import { type Expression, makeExpr } from "../parser/parser";
 import { keymap } from "./keymap";
 
 type TreePath = number[];
@@ -9,6 +10,7 @@ export const actions = {
     "MoveDown": (tree) => { tree.selection.moveDown(); tree.selection.updatePath() },
     "MoveOut":  (tree) => { tree.selection.moveOut();  tree.selection.updatePath() },
     "MoveIn":   (tree) => { tree.selection.moveIn();   tree.selection.updatePath() },
+    "Delete":   (tree) => { tree.deleteSubtree(); }
 } as const satisfies Record<string, (tree: Tree) => void>;
 
 export type Action = keyof typeof actions;
@@ -29,6 +31,12 @@ export class Tree {
             actions[action](this);
         }
     }
+
+    deleteSubtree() {
+        const tree = deleteSubtreeAtPath(this.tree(), this.selection.getPath());
+        this.setTree(fixTree(tree));
+    }
+
 }
 
 export class TreeSelection {
@@ -157,21 +165,6 @@ export class TreeSelection {
 
 }
 
-export function innerNodeEquals(a: Expression, b: any): boolean {
-    if (a.kind == b.kind) {
-        switch (a.kind) {
-            case "funCall":
-            case "placeholder":
-                return true;
-            case "operator":
-                return a.op == b.op;
-            default:
-                return a.value == b.value;
-        }
-    }
-    return false;
-}
-
 export function getNodeAtPath(tree: Expression, path: TreePath): Expression | null {
     if (path.length == 0) {
         return tree;
@@ -182,4 +175,53 @@ export function getNodeAtPath(tree: Expression, path: TreePath): Expression | nu
     }
 
     return null;
+}
+
+function canRemoveNode(tree: Expression, point: number): boolean {
+    if (tree.kind == "op") {
+        return tree.op == "." || tree.op == ","
+            || (tree.op in binaryOps && tree.args.length > 2)
+            || (tree.op in unaryOps && tree.args.length > 1)
+            || (tree.op == "funCall" && point > 0 && tree.args.length > 2)
+    }
+    return true;
+}
+
+function deleteSubtreeAtPath(tree: Expression, path: TreePath): Expression {
+    if (path.length == 0) {
+        return makeExpr.placeholder();
+    }
+
+    if (!tree || tree.kind !== "op") {
+        throw new Error("Attempt to delete nonexisting node");
+    }
+    if (path.length == 1) {
+        return {
+            ...tree,
+            args: canRemoveNode(tree, path[0]) ?
+                tree.args.toSpliced(path[0], 1)
+                : tree.args.toSpliced(path[0], 1, makeExpr.placeholder()),
+        }
+    } else {
+        const [phead, ...ptail] = path;
+        return {
+            ...tree,
+            args: tree.args.toSpliced(phead, 1, deleteSubtreeAtPath(tree.args[phead], ptail)),
+        }
+    }
+}
+
+function fixTree(tree: Expression): Expression {
+    if (tree.kind == "op") {
+        if (tree.args.length == 0 && (tree.op == "." || tree.op == ",")) {
+            return makeExpr.placeholder();
+        } else if (tree.args.length == 1 && tree.op == "." || tree.op == ",") {
+            return tree.args[0];
+        }
+        return {
+            ...tree,
+            args: tree.args.map(fixTree),
+        }
+    }
+    return tree;
 }
