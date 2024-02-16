@@ -6,7 +6,7 @@
     min-width: 1em;
     width: fit-content;
     height: fit-content;
-    margin: 0.2em;
+    margin: 0.1em 0.15em;
     padding: 0.2em;
 
     font-family: Fira sans;
@@ -49,6 +49,7 @@
 
 .node.op > .operator {
     font-family: monospace;
+    line-height: 100%;
 }
 
 .node > .args {
