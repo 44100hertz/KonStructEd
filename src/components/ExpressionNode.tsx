@@ -24,7 +24,7 @@ export default function Node(props: NodeProps) {
 
   return (
     <div style={{"--depth": props.path.length}}
-         classList={{selected: selected()}}
+         classList={{nodeWrapper: true, selected: selected()}}
          onClick={onClick}>
       <NodeContent {...props} />
     </div>

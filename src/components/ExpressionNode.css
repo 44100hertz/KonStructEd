@@ -22,6 +22,11 @@
     box-shadow: 0 0.05em 0.1em black;
 }
 
+.nodeWrapper {
+    width: fit-content;
+    height: fit-content;
+}
+
 .selected > .node {box-shadow: none; outline: 0.18em solid yellow;}
 
 .node.leaf {background: lch(45 50 calc(40 * var(--depth) + 20));}
