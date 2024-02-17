@@ -22,67 +22,33 @@
     box-shadow: 0 0.05em 0.1em black;
 }
 
-.selected > .node {
-    box-shadow: none;
-    outline: 0.18em solid yellow;
+.selected > .node {box-shadow: none; outline: 0.18em solid yellow;}
+
+.node.leaf {background: lch(45 50 calc(40 * var(--depth) + 20));}
+.node.op, .node.leaf {text-align: center;}
+
+.node.ident {font-style: italic}
+.node.number {font-weight: bold}
+
+.node.string::before {content: "“";}
+.node.string::after {content: "”";}
+
+.node.unknown {background: black;}
+.error {margin: 1em 0; color: red;}
+
+.node.op > .operator {font-family: monospace; line-height: 100%;}
+.node > .args {display: flex; flex-direction: row; margin: 0;}
+
+.node.funCall > .args::before {font-size: 20px; content: "(";}
+.node.funCall > .args::after {font-size: 20px; content: ")";}
+/* Show nothing inside of function placeholder */
+.node.funCall > .args > :only-child > .node.placeholder::after {
+    content: "";
 }
 
-.node.leaf {
-    background: lch(45 50 calc(40 * var(--depth) + 20));
-}
-
-.node.number {
-    font-weight: bold;
-}
-
-.node.string::before, .node.string::after {
-    content: "\"";
-}
-
-.node.unknown {
-    background: black;
-}
-
-.node.op, .node.leaf {
-    text-align: center;
-}
-
-.node.op > .operator {
-    font-family: monospace;
-    line-height: 100%;
-}
-
-.node > .args {
-    display: flex;
-    flex-direction: row;
-    margin: 0;
-}
-
-.node.funCall > .args::before {
-    font-size: 20px;
-    content: "(";
-}
-
-.node.funCall > .args::after {
-    font-size: 20px;
-    content: ")";
-}
-
-.node.indexList {
-    display: flex;
-    padding: 0;
-    border-radius: 0.7em;
- }
-
-.node.indexList > .operator {
-    display: none;
-}
-
-.node.indexList > .args {
-    align-items: center;
-    padding: 0.2em;
-}
-
+.node.indexList {display: flex; padding: 0; border-radius: 0.7em;}
+.node.indexList > .operator {display: none;}
+.node.indexList > .args {align-items: center; padding: 0.2em;}
 .node.indexList > .args > * > .node {
     background: none;
     border: none;
@@ -90,7 +56,6 @@
     padding: 0.2em;
     border: 0.1em solid #fff4;
 }
-
 .node.indexList > .args > :not(:first-child) > .node::before {
     content: ".";
 }
@@ -100,7 +65,6 @@
     align-items: center;
     font-size: 20px;
 }
-
 .node.funCall > .args {
     min-width: 1em;
     min-height: 1.2em;
@@ -118,18 +82,8 @@
     min-height: 1em;
     box-shadow: none;
 }
-
 .node.placeholder::after,
 .node.unknownOp > .operator::after {
     content: "<?>";
-    color: red;
-}
-
-.node.funCall > .args > :only-child > .node.placeholder::after {
-    content: "";
-}
-
-.error {
-    margin: 1em 0;
     color: red;
 }
