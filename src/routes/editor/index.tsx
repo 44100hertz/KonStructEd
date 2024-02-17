@@ -16,8 +16,9 @@ export default function Editor() {
     }
 
     createEffect(() => {
+      const t = tree.tree();
       if (textArea && textArea !== document.activeElement) {
-        textArea.value = treeToString(tree.tree())
+        textArea.value = treeToString(t)
       }
     })
 
