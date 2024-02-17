@@ -33,8 +33,7 @@ export class Tree {
     }
 
     deleteSubtree() {
-        const tree = deleteSubtreeAtPath(this.tree(), this.selection.getPath());
-        this.setTree(fixTree(tree));
+        this.setTree(deleteSubtreeAtPath(this.tree(), this.selection.getPath()));
     }
 
 }
@@ -177,59 +176,64 @@ export function getNodeAtPath(tree: Expression, path: TreePath): Expression | nu
     return null;
 }
 
-function canRemoveNode(tree: Expression, point: number): boolean {
-    if (tree.kind == "op") {
-        return tree.op == "." || tree.op == ","
-            || (tree.op in binaryOps && tree.args.length > 2)
-            || (tree.op in unaryOps && tree.args.length > 1)
-            || (tree.op == "funCall" && point > 0 && tree.args.length > 2)
-    }
-    return true;
-}
 
 function deleteSubtreeAtPath(tree: Expression, path: TreePath): Expression {
-    if (path.length == 0) {
-        return makeExpr.placeholder();
+    // Return true if a node can be removed from the arg list, false if placeholder
+    function canRemoveNode(tree: Expression, point: number): boolean {
+        if (tree.kind == "op") {
+            return tree.op == "." || tree.op == ","
+                || (tree.op in binaryOps && tree.args.length > 2)
+                || (tree.op in unaryOps && tree.args.length > 1)
+                || (tree.op == "funCall" && point > 0 && tree.args.length > 2)
+        }
+        return true;
     }
 
-    if (!tree || tree.kind !== "op") {
-        throw new Error("Attempt to delete nonexisting node");
-    }
-    if (path.length == 1) {
-        return {
-            ...tree,
-            args: canRemoveNode(tree, path[0]) ?
-                tree.args.toSpliced(path[0], 1)
-                : tree.args.toSpliced(path[0], 1, makeExpr.placeholder()),
-        }
-    } else {
-        const [phead, ...ptail] = path;
-        return {
-            ...tree,
-            args: tree.args.toSpliced(phead, 1, deleteSubtreeAtPath(tree.args[phead], ptail)),
-        }
-    }
-}
-
-function fixTree(tree: Expression): Expression {
-    if (tree.kind == "op") {
-        // Function w/o params
-        if (tree.op == "funCall" && tree.args[0].kind == "placeholder") {
-            if (tree.args.length > 1) {
-                return fixTree(makeExpr.pop(",", ...tree.args.slice(1)));
-            } else {
-                return makeExpr.placeholder();
-            }
-        } else if (tree.args.length == 0 && (tree.op == "." || tree.op == ",")) {
+    function delSubtree(tree: Expression, path: TreePath): Expression {
+        if (path.length == 0) {
             return makeExpr.placeholder();
-        } else if (tree.args.length == 1 && (tree.op == "." || tree.op == ",")) {
-            return fixTree(tree.args[0]);
-        } else {
+        }
+
+        if (!tree || tree.kind !== "op") {
+            throw new Error("Attempt to delete nonexisting node");
+        }
+        if (path.length == 1) {
+            const replacement = canRemoveNode(tree, path[0]) ? [] : [makeExpr.placeholder()];
             return {
                 ...tree,
-                args: tree.args.map(fixTree),
+                args: tree.args.toSpliced(path[0], 1, ...replacement),
+            }
+        } else {
+            const [phead, ...ptail] = path;
+            return {
+                ...tree,
+                args: tree.args.toSpliced(phead, 1, delSubtree(tree.args[phead], ptail)),
             }
         }
     }
-    return tree;
+
+    function fixTree(tree: Expression): Expression {
+        if (tree.kind == "op") {
+            // Function w/o params
+            if (tree.op == "funCall" && tree.args[0].kind == "placeholder") {
+                if (tree.args.length > 1) {
+                    return fixTree(makeExpr.pop(",", ...tree.args.slice(1)));
+                } else {
+                    return makeExpr.placeholder();
+                }
+            } else if (tree.args.length == 0 && (tree.op == "." || tree.op == ",")) {
+                return makeExpr.placeholder();
+            } else if (tree.args.length == 1 && (tree.op == "." || tree.op == ",")) {
+                return fixTree(tree.args[0]);
+            } else {
+                return {
+                    ...tree,
+                    args: tree.args.map(fixTree),
+                }
+            }
+        }
+        return tree;
+    }
+
+    return fixTree(delSubtree(tree, path));
 }
