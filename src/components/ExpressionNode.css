@@ -31,11 +31,8 @@
 .node.leaf {background: lch(45 50 calc(40 * var(--depth) + 20));}
 .node.op, .node.leaf {text-align: center;}
 
-.node.ident {font-style: italic}
-.node.number {font-weight: bold}
-
-.node.string::before {content: "“";}
-.node.string::after {content: "”";}
+.node.ident { font-style: italic }
+.node.number { font-weight: bold }
 
 .node.unknown {background: black;}
 .error {margin: 1em 0; color: red;}

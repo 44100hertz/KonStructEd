@@ -12,7 +12,6 @@ export type Expression =
     | {kind: "string", value: string}
     | {kind: "unknown", value: string, error?: any }
     | {kind: "op", op: Operator, args: Expression[], parenthesized: boolean }
-    | {kind: "obj", fields: [Expression, Expression][] }
 
 export type ExpressionKind = Expression["kind"];
 export type EKind<T> = Extract<Expression, {kind: T}>;
@@ -20,7 +19,7 @@ export type EKind<T> = Extract<Expression, {kind: T}>;
 export function stringToTree(str: string): Expression {
     try {
         const tokens = new TokenIter(lexString(str));
-        const tree = parseExpression(tokens);
+        const tree = applyRules(parseExpression(tokens));
         return tree;
     } catch (err) {
         return makeExpr.unknown(str, err);
@@ -139,6 +138,28 @@ function appendBinaryOp(tree: Expression, op: Operator): Expression {
     }
     // Default: Wrap entire tree into operator
     return makeExpr.op(op, tree, makeExpr.placeholder());
+}
+
+function applyRules(tree: Expression): Expression {
+    if (tree.kind == "op" && tree.op == ".") {
+        const [root, ...indexes] = tree.args;
+        tree = {
+            ...tree,
+            args: [root, ...indexes.map((v) => {
+                if (v.kind !== "ident") {
+                    throw new Error("Attempt to use non-string as index");
+                }
+                return makeExpr.string(v.value);
+            })],
+        }
+    }
+    if (tree.kind == "op") {
+        return {
+            ...tree,
+            args: tree.args.map(applyRules),
+        }
+    }
+    return tree;
 }
 
 function replaceLastChild(tree: Expression, node: Expression): Expression {

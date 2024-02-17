@@ -34,12 +34,13 @@ describe.each([
     ["func", "call()", call(id("call"), ph())],
     ["func with args", "sum(1,2,3)", call(id("sum"), ...[1,2,3].map(num))],
     ["curry", "max(1)(x)", call(call(id("max"), num(1)), id("x"))],
-    ["index", "hello.world", op(".", id("hello"), id("world"))],
-    ["index call", "math.max(1,2)", call(op(".", id("math"), id("max")), num(1), num(2))],
+    ["nested call and index", "a(b()).c", op(".", call(id("a"), call(id("b"))), str("c"))],
+    ["index", "hello.world", op(".", id("hello"), str("world"))],
+    ["index call", "math.max(1,2)", call(op(".", id("math"), str("max")), num(1), num(2))],
     ["chain call", "list.filter(a).flatten()",
      call(op(".", call(
-         op(".", id("list"), id("filter")), id("a")
-     ), id("flatten")), ph())],
+         op(".", id("list"), str("filter")), id("a")
+     ), str("flatten")), ph())],
     ["empty string 1", "''", str('')],
     ["empty string 2", '""', str('')],
     ["hello string", '"hello, world"', str('hello, world')],

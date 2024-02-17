@@ -29,7 +29,13 @@ export function treeToString(tree: Expression): string {
                 tree.op == "." || tree.op == "^" ? tree.op :
                 tree.op == "," ? tree.op + ' ' :
                 ' ' + tree.op + ' ';
-            return parenthesize(tree, tree.args.map(treeToString).join(op));
+            let args = tree.args;
+            // For string indexes, treat them as identifiers
+            if(tree.op == ".") {
+                args = args.map((v,i) =>
+                    (i > 0 && v.kind == "string") ? {...v, kind: "ident"} : v);
+            }
+            return parenthesize(tree, args.map(treeToString).join(op));
         }
     }
 }
