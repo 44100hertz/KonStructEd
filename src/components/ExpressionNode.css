@@ -15,11 +15,10 @@
 
     background: lch(35 50 calc(40 * var(--depth) + 20));
     border-radius: 0.5em;
-    border-style: solid;
-    border-width: 0.1em 0 0.1em 0;
-    border-color: #fff8 transparent #0008 transparent;
+    border: 0 solid #fff4;
+    border-top-width: 0.1em;
 
-    box-shadow: 0 0.05em 0.1em black;
+    box-shadow: 0 0.1em 0.15em black;
 }
 
 .nodeWrapper {
@@ -82,7 +81,7 @@
 
 .node.placeholder {
     background: #0004 !important;
-    border-color: #0008 transparent #fff8 transparent;
+    border-color: #0008;
     min-width: 1em;
     min-height: 1em;
     box-shadow: none;
