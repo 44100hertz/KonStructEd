@@ -51,7 +51,6 @@
 .node.indexList > .operator {display: none;}
 .node.indexList > .args {align-items: center; padding: 0.2em;}
 .node.indexList > .args > * > .node {
-    background: none;
     border: none;
     box-shadow: none;
     padding: 0.2em;
