@@ -15,10 +15,9 @@
 
     background: lch(35 50 calc(40 * var(--depth) + 20));
     border-radius: 0.5em;
-    border: 0 solid #fff4;
-    border-top-width: 0.1em;
+    border: 0.1em solid #fff4;
 
-    box-shadow: 0 0.1em 0.15em black;
+    box-shadow: 0 0.05em 0.15em black;
 }
 
 .nodeWrapper {
@@ -33,19 +32,14 @@
 
 .node.ident { font-style: italic }
 .node.number { font-weight: bold }
+.node.string::before {content: "‘";}
+.node.string::after {content: "’";}
 
 .node.unknown {background: black;}
 .error {margin: 1em 0; color: red;}
 
 .node.op > .operator {font-family: monospace; line-height: 100%;}
 .node > .args {display: flex; flex-direction: row; margin: 0;}
-
-.node.funCall > .args::before {font-size: 20px; content: "(";}
-.node.funCall > .args::after {font-size: 20px; content: ")";}
-/* Show nothing inside of function placeholder */
-.node.funCall > .args > :only-child > .node.placeholder::after {
-    content: "";
-}
 
 .node.indexList {display: flex; padding: 0; border-radius: 0.7em;}
 .node.indexList > .operator {display: none;}
@@ -56,9 +50,8 @@
     padding: 0.2em;
     border: 0.1em solid #fff4;
 }
-.node.indexList > .args > :not(:first-child) > .node::before {
-    content: ".";
-}
+.node.indexList > .args > :not(:first-child) { display: flex; align-items: end; }
+.node.indexList > .args > :not(:first-child)::before { content: "."; }
 
 .node.funCall {
     display: flex;
@@ -66,19 +59,26 @@
     font-size: 20px;
 }
 .node.funCall > .args {
-    min-width: 1em;
-    min-height: 1.2em;
-    height: fit-content;
-    margin: 0 0.1em;
+    border-style: solid;
+    border-radius: 0.5em / 50%;
+    border-width: 0.05em 0.12em 0.05em 0.12em;
+    border-color: transparent white transparent white;
 
-    display: flex;
+    margin: 0 0.1em;
+    padding: 0 0.2em;
+
     align-items: center;
 }
+/* Show nothing inside of function placeholder */
+.node.funCall > .args > :only-child > .node.placeholder::after {
+    content: "";
+}
+
 
 .node.placeholder {
-    background: #0004 !important;
+    background: #0004;
     border-color: #0008;
-    min-width: 1em;
+    border-top-width: 0.2em;
     min-height: 1em;
     box-shadow: none;
 }
