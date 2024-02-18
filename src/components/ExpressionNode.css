@@ -6,7 +6,7 @@
     min-width: 1em;
     width: fit-content;
     height: fit-content;
-    margin: 0.1em 0.15em;
+    margin: 0.1em 0.25em;
     padding: 0.2em;
 
     font-family: Fira sans;
@@ -27,7 +27,10 @@
 
 .selected > .node {box-shadow: none; outline: 0.18em solid yellow;}
 
-.node.leaf {background: lch(45 50 calc(40 * var(--depth) + 20));}
+.node.leaf {
+    margin: 0.1em 0.1em;
+    background: lch(45 50 calc(40 * var(--depth) + 20));
+}
 .node.op, .node.leaf {text-align: center;}
 
 .node.ident { font-style: italic }
@@ -56,16 +59,15 @@
 .node.funCall {
     display: flex;
     align-items: center;
-    font-size: 20px;
 }
 .node.funCall > .args {
     border-style: solid;
-    border-radius: 0.5em / 50%;
+    border-radius: 0.8em / 50%;
     border-width: 0.05em 0.12em 0.05em 0.12em;
     border-color: transparent white transparent white;
 
     margin: 0 0.1em;
-    padding: 0 0.2em;
+    padding: 0 0.4em;
 
     align-items: center;
 }
