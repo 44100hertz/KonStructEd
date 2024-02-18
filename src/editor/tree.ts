@@ -184,7 +184,7 @@ function deleteSubtreeAtPath(tree: Expression, path: TreePath): Expression {
         if (tree.kind == "op") {
             return tree.op == "." || tree.op == "," || tree.op == "unknown"
                 || (tree.op in binaryOps && tree.args.length > 2)
-                || (tree.op == "funCall" && tree.args.length > 2)
+                || (tree.op == "funCall" && tree.args.length > 2 && point > 0)
                 || (tree.op in unaryOps && tree.args.length > 1)
         }
         return true;
