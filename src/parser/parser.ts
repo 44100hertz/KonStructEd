@@ -86,10 +86,10 @@ function parseExpression(tokens: TokenIter, flags: ParseExprFlags = {}): Express
 function appendValue(tree: Expression, value: Expression): Expression {
     const [leaf, parent] = getRightEdge(tree);
     // Make identifiers in index chain into strings
-    if (parent && value.kind == "ident" && parent.kind == "op" && parent.op == ".") {
-        value = makeExpr.string(value.value);
-    }
     if (leaf.kind == "placeholder") {
+        if (parent && value.kind == "ident" && parent.kind == "op" && parent.op == ".") {
+            value = makeExpr.string(value.value);
+        }
         return replaceLastLeaf(tree, value);
     } else {
         // Two values in a row, assume unknown operator between
