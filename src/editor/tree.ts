@@ -1,5 +1,6 @@
 import { createSignal, createEffect, on, type Accessor, type Setter } from "solid-js";
 import { unaryOps, binaryOps } from "../parser/defs";
+import { tokenKinds } from "../parser/lexer";
 import { type Expression, makeExpr } from "../parser/parser";
 import { keymap } from "./keymap";
 
@@ -183,6 +184,7 @@ function deleteSubtreeAtPath(tree: Expression, path: TreePath): Expression {
         if (tree.kind == "op") {
             return tree.op == "." || tree.op == "," || tree.op == "unknown"
                 || (tree.op in binaryOps && tree.args.length > 2)
+                || (tree.op == "funCall" && tree.args.length > 2)
                 || (tree.op in unaryOps && tree.args.length > 1)
         }
         return true;
@@ -213,19 +215,26 @@ function deleteSubtreeAtPath(tree: Expression, path: TreePath): Expression {
 
     function fixTree(tree: Expression): Expression {
         if (tree.kind == "op") {
+            // First entry of index list should be identifier
+            if (tree.op == "." && tree.args[0].kind == "string" && tokenKinds.ident(tree.args[0].value)) {
+                tree = {
+                    ...tree,
+                    args: [makeExpr.ident(tree.args[0].value), ...tree.args.slice(1)],
+                };
+            }
+
             const emptyNotAllowed = tree.op == "." || tree.op == "," || tree.op == "unknown" || tree.op == "funCall";
             if (// Empty func Renders as empty parens -- must be turned into nothing
-                (tree.op == "funCall" && tree.args[0].kind == "placeholder" && tree.args[1].kind == "placeholder") ||
+                (tree.op == "funCall" && tree.args.every((arg) => arg.kind == "placeholder")) ||
                     (tree.args.length == 0 && emptyNotAllowed))
             {
                 return makeExpr.placeholder();
             } else if (tree.args.length == 1 && emptyNotAllowed) {
                 return fixTree(tree.args[0]);
-            } else {
-                return {
-                    ...tree,
-                    args: tree.args.map(fixTree),
-                }
+            }
+            return {
+                ...tree,
+                args: tree.args.map(fixTree),
             }
         }
         return tree;
