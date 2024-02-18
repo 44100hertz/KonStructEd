@@ -6,8 +6,8 @@ const num = makeExpr.number;
 const id = makeExpr.ident;
 const ph = makeExpr.placeholder;
 const op = makeExpr.op;
+const pop = makeExpr.pop;
 const str = makeExpr.string;
-const pop = (o: Operator, ...args: Expression[]) => ({...op(o,...args), parenthesized: true});
 const call = (...args: Expression[]) => makeExpr.op("funCall", ...args);
 
 describe.each([
@@ -34,7 +34,7 @@ describe.each([
     ["func", "call()", call(id("call"), ph())],
     ["func with args", "sum(1,2,3)", call(id("sum"), ...[1,2,3].map(num))],
     ["curry", "max(1)(x)", call(call(id("max"), num(1)), id("x"))],
-    ["nested call and index", "a(b()).c", op(".", call(id("a"), call(id("b"))), str("c"))],
+    ["nested call and index", "a(b()).c", op(".", call(id("a"), call(id("b"), ph())), str("c"))],
     ["index", "hello.world", op(".", id("hello"), str("world"))],
     ["index call", "math.max(1,2)", call(op(".", id("math"), str("max")), num(1), num(2))],
     ["chain call", "list.filter(a).flatten()",
