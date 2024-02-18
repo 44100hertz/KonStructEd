@@ -1,7 +1,20 @@
-import { lexString, type Token, type TokenKind } from './lexer';
-import { unaryOps, binaryOps, type UnaryOp, type BinaryOp } from './defs';
+import { lexString, type Token } from './lexer';
+import { unaryOps, binaryOps, type UnaryOp as LangUnaryOp, type BinaryOp as LangBinaryOp } from './defs';
 
-export type Operator = UnaryOp | BinaryOp | "." | "funCall" | "unknown";
+const specialOps = {
+    ".": true,
+    "funCall": true,
+    "unknown": true,
+};
+
+export type SpecialOp = keyof typeof specialOps;
+export type UnaryOp = LangUnaryOp;
+export type BinaryOp = LangBinaryOp | SpecialOp;
+
+export const isUnop = (op: string): op is UnaryOp =>
+    (op in unaryOps);
+export const isBinop = (op: string): op is BinaryOp =>
+    (op in binaryOps || op in specialOps);
 
 const UNKNOWN_PRECEDENCE = 4; // for implied binops, what precedence to use
 
@@ -11,10 +24,21 @@ export type Expression =
     | {kind: "ident", value: string}
     | {kind: "string", value: string}
     | {kind: "unknown", value: string, error?: any }
-    | {kind: "op", op: Operator, args: Expression[], parenthesized: boolean }
+    | {kind: "op",
+       op: BinaryOp,
+       args: [Expression, Expression, ...Expression[]],
+       parenthesized: boolean
+      }
+    | {kind: "op",
+       op: UnaryOp,
+       args: [Expression, ...Expression[]],
+       parenthesized: boolean
+      }
 
 export type ExpressionKind = Expression["kind"];
 export type EKind<T> = Extract<Expression, {kind: T}>;
+export type EBinaryOp = Extract<Expression, {kind: "op", op: BinaryOp}>;
+export type EUnaryOp = Extract<Expression, {kind: "op", op: UnaryOp}>;
 
 export function stringToTree(str: string): Expression {
     try {
@@ -59,11 +83,11 @@ function parseExpression(tokens: TokenIter, flags: ParseExprFlags = {}): Express
                 // that, if the rightmost subtree (the only subtree active in
                 // parsing) is empty, it follows that there is no left value,
                 // therefore the operator is unary.
-                if (token.text in unaryOps && leaf.kind == "placeholder") {
-                    const node = makeExpr.op(token.text as Operator, makeExpr.placeholder());
+                if (isUnop(token.text) && leaf.kind == "placeholder") {
+                    const node = makeExpr.unop(token.text, makeExpr.placeholder());
                     tree = appendValue(tree, node);
-                } else if (token.text in binaryOps) {
-                    tree = appendBinaryOp(tree, token.text as Operator);
+                } else if (isBinop(token.text)) {
+                    tree = appendBinaryOp(tree, token.text);
                 } else {
                     throw new Error(`Could not resolve op arity '${token.text}'`);
                 }
@@ -105,18 +129,18 @@ function appendParenthesized(tree: Expression, value: Expression): Expression {
     const args = value.kind == "op" && value.op == "," && value.args;
     if (target && args) {
         // Function call on argument list
-        const func = makeExpr.op("funCall", target, ...args);
+        const func = makeExpr.binop("funCall", target, ...args);
         return replaceLastLeaf(tree, func, target);
     } else if (target) {
         // Function call on single value
         if (value.kind == "op") value.parenthesized = false;
-        return replaceLastLeaf(tree, makeExpr.op("funCall", target, value), target);
+        return replaceLastLeaf(tree, makeExpr.binop("funCall", target, value), target);
     }
 
     // Not function call; treat as plain value
     if (args) {
         // Comma list not allowed, must be converted to placeholder funCall
-        value = makeExpr.op("funCall", makeExpr.placeholder(), ...args);
+        value = makeExpr.binop("funCall", makeExpr.placeholder(), ...args);
     }
     if (value.kind !== "placeholder") {
         return appendValue(tree, value);
@@ -125,7 +149,7 @@ function appendParenthesized(tree: Expression, value: Expression): Expression {
 }
 
 // Try to fit a binary op into the tree
-function appendBinaryOp(tree: Expression, op: Operator): Expression {
+function appendBinaryOp(tree: Expression, op: BinaryOp): Expression {
     const args = getArgs(tree);
     if (args && tree.kind == "op") {
         // ^ redundant check, satisfies TS...
@@ -134,7 +158,7 @@ function appendBinaryOp(tree: Expression, op: Operator): Expression {
             // 1 + 2 + 3 basically translates to (+ 1 2 3)
             return {
                 ...tree,
-                args: [...args, makeExpr.placeholder()],
+                args: [...args, makeExpr.placeholder()] as any, // silly TS
             }
         }
 
@@ -146,20 +170,20 @@ function appendBinaryOp(tree: Expression, op: Operator): Expression {
         // Operator precedence is higher than tree node...
         // Must wrap it into the tree
         if (getPrecedence(op, true) > getNodePrecedence(tree)) {
-            const inner = makeExpr.op(op, args[last], makeExpr.placeholder());
+            const inner = makeExpr.binop(op, args[last], makeExpr.placeholder());
             return replaceLastChild(tree, inner);
         }
     }
     // Default: Wrap entire tree into operator
-    return makeExpr.op(op, tree, makeExpr.placeholder());
+    return makeExpr.binop(op, tree, makeExpr.placeholder());
 }
 
 function replaceLastChild(tree: Expression, node: Expression): Expression {
     const c = getArgs(tree);
     if (c) {
         return {
-            ...tree as EKind<"operator">,
-            args: [...c.slice(0, -1), node],
+            ...tree as EKind<"op">,
+            args: [...c.slice(0, -1), node] as any, // silly TS again
         }
     }
     throw new Error("Attempt to replace child of non-inner node...");
@@ -206,9 +230,9 @@ function getNodePrecedence(node: Expression): number {
     return Infinity;
 }
 
-export function getPrecedence(op: Operator, isBinary: boolean): number {
+export function getPrecedence(op: BinaryOp | UnaryOp, isBinary: boolean): number {
     return op == "unknown"            ? UNKNOWN_PRECEDENCE :
-        (isBinary && op in binaryOps) ? binaryOps[op as BinaryOp].p :
+        (isBinary && op in binaryOps) ? binaryOps[op as LangBinaryOp].p :
         (!isBinary && op in unaryOps) ? unaryOps[op as UnaryOp].p :
         Infinity;
 }
@@ -235,15 +259,17 @@ export const makeExpr = {
         kind: "string",
         value: text,
     }),
-    op: (op: Operator, ...args: Expression[]): EKind<"op"> => ({
+    unop: (op: UnaryOp, first: Expression): EUnaryOp => ({
         kind: "op",
-        op,
-        args,
+        op: op,
+        args: [first],
         parenthesized: false,
     }),
-    pop: (op: Operator, ...args: Expression[]): EKind<"op"> => ({
-        ...makeExpr.op(op, ...args),
-        parenthesized: true,
+    binop: (op: BinaryOp, first: Expression, second: Expression, ...rest: Expression[]): EBinaryOp => ({
+        kind: "op",
+        op: op,
+        args: [first, second, ...rest],
+        parenthesized: false,
     }),
     unknown: (text: string, error?: any): EKind<"unknown"> => ({
         kind: "unknown",
@@ -251,6 +277,9 @@ export const makeExpr = {
         error,
     }),
 };
+
+export const parenthesize = (expr: EKind<"op">): EKind<"op"> =>
+    ({ ...expr, parenthesized: true });
 
 export class TokenIter {
     index = 0;

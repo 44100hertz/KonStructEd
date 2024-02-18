@@ -1,7 +1,7 @@
 import { createSignal, createEffect, on, type Accessor, type Setter } from "solid-js";
 import { unaryOps, binaryOps } from "../parser/defs";
 import { tokenKinds } from "../parser/lexer";
-import { type Expression, makeExpr } from "../parser/parser";
+import { type Expression, makeExpr, isBinop, isUnop } from "../parser/parser";
 import { keymap } from "./keymap";
 
 type TreePath = number[];
@@ -183,7 +183,7 @@ function deleteSubtreeAtPath(tree: Expression, path: TreePath): Expression {
     function canRemoveNode(tree: Expression, point: number): boolean {
         if (tree.kind == "op") {
             return tree.op == "." || tree.op == "," || tree.op == "unknown"
-                || (tree.op in binaryOps && tree.args.length > 2)
+                || (isBinop(tree.op) && tree.args.length > 2)
                 || (tree.op == "funCall" && tree.args.length > 2 && point > 0)
                 || (tree.op in unaryOps && tree.args.length > 1)
         }
@@ -202,13 +202,13 @@ function deleteSubtreeAtPath(tree: Expression, path: TreePath): Expression {
             const replacement = canRemoveNode(tree, path[0]) ? [] : [makeExpr.placeholder()];
             return {
                 ...tree,
-                args: tree.args.toSpliced(path[0], 1, ...replacement),
+                args: tree.args.toSpliced(path[0], 1, ...replacement) as any,
             }
         } else {
             const [phead, ...ptail] = path;
             return {
                 ...tree,
-                args: tree.args.toSpliced(phead, 1, delSubtree(tree.args[phead], ptail)),
+                args: tree.args.toSpliced(phead, 1, delSubtree(tree.args[phead], ptail)) as any,
             }
         }
     }
@@ -219,12 +219,13 @@ function deleteSubtreeAtPath(tree: Expression, path: TreePath): Expression {
             if (tree.op == "." && tree.args[0].kind == "string" && tokenKinds.ident(tree.args[0].value)) {
                 tree = {
                     ...tree,
-                    args: [makeExpr.ident(tree.args[0].value), ...tree.args.slice(1)],
+                    args: [makeExpr.ident(tree.args[0].value), ...tree.args.slice(1)] as any,
                 };
             }
 
+            // If any of these things contain a pair of placeholders, they will not be renderable to text
             const emptyNotAllowed = tree.op == "." || tree.op == "," || tree.op == "unknown" || tree.op == "funCall";
-            if (// Empty func Renders as empty parens -- must be turned into nothing
+            if (
                 (tree.op == "funCall" && tree.args.every((arg) => arg.kind == "placeholder")) ||
                     (tree.args.length == 0 && emptyNotAllowed))
             {
@@ -234,7 +235,7 @@ function deleteSubtreeAtPath(tree: Expression, path: TreePath): Expression {
             }
             return {
                 ...tree,
-                args: tree.args.map(fixTree),
+                args: tree.args.map(fixTree) as any,
             }
         }
         return tree;
