@@ -41,7 +41,7 @@ function parseExpression(tokens: TokenIter, flags: ParseExprFlags = {}): Express
                 if (token.text == '(') {
                     const expr = parseExpression(tokens, {...flags, parenthesized: true});
                     if ('parenthesized' in expr) expr.parenthesized = true;
-                    tree = appendArgs(tree, expr);
+                    tree = appendParenthesized(tree, expr);
                 } else if (('parenthesized' in flags || 'list' in flags) && token.text == ')') {
                     return tree;
                 } else {
@@ -98,7 +98,7 @@ function appendValue(tree: Expression, value: Expression): Expression {
 }
 
 // Put something in parens at the end of the tree
-function appendArgs(tree: Expression, value: Expression): Expression {
+function appendParenthesized(tree: Expression, value: Expression): Expression {
     // Find likely function call
     const [leaf, parent] = getRightEdge(tree);
     const target = (parent && isCallable(parent)) ? parent : (leaf && isCallable(leaf)) ? leaf : null;
@@ -118,7 +118,10 @@ function appendArgs(tree: Expression, value: Expression): Expression {
         // Comma list not allowed, must be converted to placeholder funCall
         value = makeExpr.op("funCall", makeExpr.placeholder(), ...args);
     }
-    return appendValue(tree, value);
+    if (value.kind !== "placeholder") {
+        return appendValue(tree, value);
+    }
+    return tree;
 }
 
 // Try to fit a binary op into the tree
