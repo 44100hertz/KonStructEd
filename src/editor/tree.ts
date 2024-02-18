@@ -181,10 +181,9 @@ function deleteSubtreeAtPath(tree: Expression, path: TreePath): Expression {
     // Return true if a node can be removed from the arg list, false if placeholder
     function canRemoveNode(tree: Expression, point: number): boolean {
         if (tree.kind == "op") {
-            return tree.op == "." || tree.op == ","
+            return tree.op == "." || tree.op == "," || tree.op == "unknown"
                 || (tree.op in binaryOps && tree.args.length > 2)
                 || (tree.op in unaryOps && tree.args.length > 1)
-                || (tree.op == "funCall" && point > 0 && tree.args.length > 2)
         }
         return true;
     }
@@ -214,16 +213,13 @@ function deleteSubtreeAtPath(tree: Expression, path: TreePath): Expression {
 
     function fixTree(tree: Expression): Expression {
         if (tree.kind == "op") {
-            // Function w/o params
-            if (tree.op == "funCall" && tree.args[0].kind == "placeholder") {
-                if (tree.args.length > 1) {
-                    return fixTree(makeExpr.pop(",", ...tree.args.slice(1)));
-                } else {
-                    return makeExpr.placeholder();
-                }
-            } else if (tree.args.length == 0 && (tree.op == "." || tree.op == ",")) {
+            const emptyNotAllowed = tree.op == "." || tree.op == "," || tree.op == "unknown" || tree.op == "funCall";
+            if (// Empty func Renders as empty parens -- must be turned into nothing
+                (tree.op == "funCall" && tree.args[0].kind == "placeholder" && tree.args[1].kind == "placeholder") ||
+                    (tree.args.length == 0 && emptyNotAllowed))
+            {
                 return makeExpr.placeholder();
-            } else if (tree.args.length == 1 && (tree.op == "." || tree.op == ",")) {
+            } else if (tree.args.length == 1 && emptyNotAllowed) {
                 return fixTree(tree.args[0]);
             } else {
                 return {

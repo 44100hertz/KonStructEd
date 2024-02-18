@@ -102,15 +102,22 @@ function appendArgs(tree: Expression, value: Expression): Expression {
     // Find likely function call
     const [leaf, parent] = getRightEdge(tree);
     const target = (parent && isCallable(parent)) ? parent : (leaf && isCallable(leaf)) ? leaf : null;
-    if (target) {
-        if (value.kind == "op" && value.op == ",") {
-            return replaceLastLeaf(tree, makeExpr.op("funCall", target, ...value.args), target);
-        }
+    const args = value.kind == "op" && value.op == "," && value.args;
+    if (target && args) {
+        // Function call on argument list
+        const func = makeExpr.op("funCall", target, ...args);
+        return replaceLastLeaf(tree, func, target);
+    } else if (target) {
+        // Function call on single value
         if (value.kind == "op") value.parenthesized = false;
         return replaceLastLeaf(tree, makeExpr.op("funCall", target, value), target);
     }
 
     // Not function call; treat as plain value
+    if (args) {
+        // Comma list not allowed, must be converted to placeholder funCall
+        value = makeExpr.op("funCall", makeExpr.placeholder(), ...args);
+    }
     return appendValue(tree, value);
 }
 
