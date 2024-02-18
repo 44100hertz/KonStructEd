@@ -14,7 +14,7 @@ const matchAll = (cond: (c: string, i: number) => boolean) =>
     (str: string) =>
     (str !== '') && str.split('').every(cond);
 
-const tokenKinds: Record<Extract<TokenKind, 'white' | 'number' | 'ident'>, (s: string) => boolean> = {
+export const tokenKinds: Record<Extract<TokenKind, 'white' | 'number' | 'ident'>, (s: string) => boolean> = {
     white: (s) => s.trim() === '',
     number: matchAll((c) => c >= '0' && c <= '9'),
     ident: matchAll((c: string, i: number) =>

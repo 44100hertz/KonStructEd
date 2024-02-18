@@ -32,10 +32,8 @@ export const binaryOps = {
     '//': { p: 10 },
     '%': { p: 10 },
     '^': { p: 12 },
-    '.': { p: 14 },
-} as const satisfies Record<string, Op>
-
-export const FUNCALL_PRECEDENCE = 13;
+    '.': { p: 13 },
+} as const satisfies Record<string, Op>;
 
 export const symbols = {
     '(': true,

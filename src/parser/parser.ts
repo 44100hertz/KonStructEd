@@ -1,7 +1,7 @@
 import { lexString, type Token, type TokenKind } from './lexer';
-import { unaryOps, binaryOps, type UnaryOp, type BinaryOp, type Symbol, FUNCALL_PRECEDENCE } from './defs';
+import { unaryOps, binaryOps, type UnaryOp, type BinaryOp } from './defs';
 
-export type Operator = UnaryOp | BinaryOp | "funCall" | "unknown";
+export type Operator = UnaryOp | BinaryOp | "." | "funCall" | "unknown";
 
 const UNKNOWN_PRECEDENCE = 4; // for implied binops, what precedence to use
 
@@ -19,7 +19,7 @@ export type EKind<T> = Extract<Expression, {kind: T}>;
 export function stringToTree(str: string): Expression {
     try {
         const tokens = new TokenIter(lexString(str));
-        const tree = applyRules(parseExpression(tokens));
+        const tree = parseExpression(tokens);
         return tree;
     } catch (err) {
         return makeExpr.unknown(str, err);
@@ -84,7 +84,11 @@ function parseExpression(tokens: TokenIter, flags: ParseExprFlags = {}): Express
 
 // Put some arbitrary thing on the end of the tree, if possible
 function appendValue(tree: Expression, value: Expression): Expression {
-    const leaf = getLastLeaf(tree);
+    const [leaf, parent] = getRightEdge(tree);
+    // Make identifiers in index chain into strings
+    if (parent && value.kind == "ident" && parent.kind == "op" && parent.op == ".") {
+        value = makeExpr.string(value.value);
+    }
     if (leaf.kind == "placeholder") {
         return replaceLastLeaf(tree, value);
     } else {
@@ -96,14 +100,14 @@ function appendValue(tree: Expression, value: Expression): Expression {
 // Put something in parens at the end of the tree
 function appendArgs(tree: Expression, value: Expression): Expression {
     // Find likely function call
-    const maybeCallable = (node: Expression) =>
-        getNodePrecedence(node) < FUNCALL_PRECEDENCE;
-    const leaf = getLastLeaf(tree, maybeCallable);
-    if (isCallable(leaf)) {
+    const [leaf, parent] = getRightEdge(tree);
+    const target = (parent && isCallable(parent)) ? parent : (leaf && isCallable(leaf)) ? leaf : null;
+    if (target) {
         if (value.kind == "op" && value.op == ",") {
-            return replaceLastLeaf(tree, makeExpr.op("funCall", leaf, ...value.args), maybeCallable);
+            return replaceLastLeaf(tree, makeExpr.op("funCall", target, ...value.args), target);
         }
-        return replaceLastLeaf(tree, makeExpr.op("funCall", leaf, value), maybeCallable);
+        if (value.kind == "op") value.parenthesized = false;
+        return replaceLastLeaf(tree, makeExpr.op("funCall", target, value), target);
     }
 
     // Not function call; treat as plain value
@@ -140,28 +144,6 @@ function appendBinaryOp(tree: Expression, op: Operator): Expression {
     return makeExpr.op(op, tree, makeExpr.placeholder());
 }
 
-function applyRules(tree: Expression): Expression {
-    if (tree.kind == "op" && tree.op == ".") {
-        const [root, ...indexes] = tree.args;
-        tree = {
-            ...tree,
-            args: [root, ...indexes.map((v) => {
-                if (v.kind !== "ident") {
-                    throw new Error("Attempt to use non-string as index");
-                }
-                return makeExpr.string(v.value);
-            })],
-        }
-    }
-    if (tree.kind == "op") {
-        return {
-            ...tree,
-            args: tree.args.map(applyRules),
-        }
-    }
-    return tree;
-}
-
 function replaceLastChild(tree: Expression, node: Expression): Expression {
     const c = getArgs(tree);
     if (c) {
@@ -173,45 +155,52 @@ function replaceLastChild(tree: Expression, node: Expression): Expression {
     throw new Error("Attempt to replace child of non-inner node...");
 }
 
-
-type NodeFilter = (e: Expression) => boolean;
-
-function replaceLastLeaf(tree: Expression, node: Expression, cond?: NodeFilter): Expression {
+// Replace the rightmost leaf of the tree, alternatively can target any node on
+// the right edge of the tree to replace.
+function replaceLastLeaf(tree: Expression, node: Expression, target?: Expression): Expression {
+    if (tree == target) {
+        return node;
+    }
     const c = getArgs(tree);
-    if (c && !(cond && !cond(tree))) {
-        return replaceLastChild(tree, replaceLastLeaf(c[c.length-1], node, cond))
+    if (c) {
+        return replaceLastChild(tree, replaceLastLeaf(c[c.length-1], node, target))
     }
     return node;
 }
 
 // Return the right-most leaf at the bottom of the tree
-function getLastLeaf(tree: Expression, cond?: NodeFilter): Expression {
+function getLastLeaf(tree: Expression): Expression {
+    return getRightEdge(tree)[0];
+}
+
+// Return the last index of every subtree recursively. Reverse order, index 0 is
+// the last leaf.
+function getRightEdge(tree: Expression): Expression[] {
     const c = getArgs(tree);
-    if (c && !(cond && !cond(tree))) {
-        return getLastLeaf(c[c.length-1], cond);
+    if (c) {
+        return [...getRightEdge(c[c.length-1]), tree];
     } else {
-        return tree;
+        return [tree];
     }
 }
 
 function getArgs(tree: Expression): Expression[] | null {
-    return ('args' in tree && !tree.parenthesized) ?
+    return (tree.kind == "op" && !tree.parenthesized && tree.op !== 'funCall') ?
         tree.args : null;
 }
 
 function getNodePrecedence(node: Expression): number {
-    if (node.kind == "op" && !node.parenthesized && node.op !== "funCall") {
+    if (node.kind == "op" && !node.parenthesized) {
         return getPrecedence(node.op, node.args.length > 1);
     }
     return Infinity;
 }
 
 export function getPrecedence(op: Operator, isBinary: boolean): number {
-    return op == "funCall" ? FUNCALL_PRECEDENCE :
-        op == "unknown"    ? UNKNOWN_PRECEDENCE :
-        isBinary           ? binaryOps[op as BinaryOp]?.p :
-        unaryOps[op as UnaryOp]?.p
-        ?? Infinity;
+    return op == "unknown"            ? UNKNOWN_PRECEDENCE :
+        (isBinary && op in binaryOps) ? binaryOps[op as BinaryOp].p :
+        (!isBinary && op in unaryOps) ? unaryOps[op as UnaryOp].p :
+        Infinity;
 }
 
 function isCallable(node: Expression): boolean {
