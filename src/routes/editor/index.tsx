@@ -2,8 +2,11 @@ import { createEffect, onMount, onCleanup } from "solid-js";
 import { stringToTree } from "~/parser/parser";
 import { treeToString } from "~/parser/unparser";
 import { Tree } from "~/editor/tree";
+import init, { text_to_tree } from "libkon";
 import ExpressionNode from "~/components/ExpressionNode";
 import "./style.css";
+
+await init();
 
 export default function Editor() {
     const tree = new Tree();
@@ -11,6 +14,7 @@ export default function Editor() {
 
     function reparse(ev: any) {
       if (textArea) {
+        console.log(JSON.stringify(text_to_tree(textArea.value)));
         tree.setTree(stringToTree(textArea.value));
       }
     }
