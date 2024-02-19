@@ -1,8 +1,9 @@
 {
   "name": "structedit",
   "scripts": {
-    "dev": "vinxi dev",
-    "build": "vinxi build",
+    "dev": "concurrently \"rsw watch\" \"vinxi dev --port 3001\"",
+    "build": "rsw build && vinxi build",
+    "rsw": "rsw",
     "start": "vinxi start",
     "test": "vitest run",
     "test-watch": "vitest",
@@ -18,12 +19,17 @@
     "@testing-library/jest-dom": "^6.1.5",
     "@testing-library/user-event": "^14.5.1",
     "@vitest/ui": "^1.1.0",
+    "concurrently": "^8.2.2",
     "jsdom": "^24.0.0",
     "solid-js": "^1.8.14",
     "typescript": "^5.3.3",
     "vinxi": "^0.2.1",
     "vite": "^4.5.0",
+    "vite-plugin-rsw": "^2.0.11",
     "vite-plugin-solid": "^2.9.1",
     "vitest": "^1.2.1"
+  },
+  "dependencies": {
+    "libkon": "link:/Users/samp/Code/web/structedit/libkon/pkg"
   }
 }
