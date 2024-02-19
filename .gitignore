@@ -10,6 +10,8 @@ netlify
 .env
 .env*.local
 
+.turbo
+
 # dependencies
 /node_modules
 

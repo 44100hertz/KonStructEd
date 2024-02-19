@@ -1,0 +1,10 @@
+{
+  "name": "card",
+  "scripts": {
+    "buildDev": "wasm-pack build --target web --dev",
+    "build": "wasm-pack build --target web --release"
+  },
+  "devDependencies": {
+    "wasm-bindgen": "^0.2"
+  }
+}
