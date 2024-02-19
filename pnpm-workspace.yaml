@@ -1,3 +1,4 @@
-- packages:
-  - 'kon/*'
-  - 'webui/*'
+packages:
+ - "webui/"
+ - "kon/"
+ - "kon/pkg/"

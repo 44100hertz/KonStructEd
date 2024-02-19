@@ -2,6 +2,8 @@ import { createEffect, onMount, onCleanup } from "solid-js";
 import { stringToTree } from "~/parser/parser";
 import { treeToString } from "~/parser/unparser";
 import { Tree } from "~/editor/tree";
+import { add } from "libkon";
+
 import ExpressionNode from "~/components/ExpressionNode";
 import "./style.css";
 
@@ -22,7 +24,7 @@ export default function Editor() {
       }
     })
 
-    const placeholder = "10 * math.max(200, 5^5)";
+    const placeholder = `${add(5,5)} * math.max(200, 5^5)`;
     tree.setTree(stringToTree(placeholder));
 
     const _handleKey = (ev: KeyboardEvent) => {
