@@ -14,7 +14,7 @@ export type BinaryOp = LangBinaryOp | SpecialOp;
 export const isUnop = (op: string): op is UnaryOp =>
     (op in unaryOps);
 export const isBinop = (op: string): op is BinaryOp =>
-    (op in binaryOps || op in specialOps);
+    (op in binaryOps || op == ".");
 
 const UNKNOWN_PRECEDENCE = 4; // for implied binops, what precedence to use
 

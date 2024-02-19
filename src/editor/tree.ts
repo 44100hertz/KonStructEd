@@ -183,8 +183,8 @@ function deleteSubtreeAtPath(tree: Expression, path: TreePath): Expression {
     function canRemoveNode(tree: Expression, point: number): boolean {
         if (tree.kind == "op") {
             return tree.op == "." || tree.op == "," || tree.op == "unknown"
-                || (isBinop(tree.op) && tree.args.length > 2)
                 || (tree.op == "funCall" && tree.args.length > 2 && point > 0)
+                || (isBinop(tree.op) && tree.args.length > 2)
                 || (tree.op in unaryOps && tree.args.length > 1)
         }
         return true;
