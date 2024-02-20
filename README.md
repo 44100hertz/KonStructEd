@@ -2,7 +2,7 @@
 
 Kon Structure Editor is an experimental proof-of-concept structure editor for Lua.
 
-It is a Web Application written in Solid.JS.
+It is a Web Application written in Solid.JS, backed with rust library LibKon to do the heavy lifting.
 
 ## Structure Editor?
 

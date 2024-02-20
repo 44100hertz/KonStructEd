@@ -1,9 +1,9 @@
 # LibKon
-KonStructEd is based on the bedrock Rust library libkon, which is used to parse
+KonStructEd is based on the bedrock Rust library LibKon, which is used to parse
 Lua CST!! (not AST) for the purpose of structure editing. Why should this exist?
 Read on...
 
-# Design
+# Parser Design
 Conventional parsers must be modified to create an effective structure editor.
 
 Most parsers create an AST (abstract syntax tree), but structure parsers create
@@ -42,6 +42,13 @@ AST, for the reasons above. These include, but are not limited to:
    special structure-only node. These would likely be created using plugins, and
    could appear in many ways in the structure editing UI, marked either by
    special comments or by a specific structure match.
+   
+## Editor
+LibKon also provides features for editing the CST, ideally for integration with
+an Editor UI, such as the one currently built around it. This enables
+modifications to the CST such as adding or removing nodes in a way that
+preserves an essential axiom of KonStructEd: the CST and source text must have a
+1:1 mapping between each other.
 
 ## Unparser
 The "unparser" or serializer is used to write the edited structure back to
