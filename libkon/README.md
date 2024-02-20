@@ -1,84 +1,48 @@
-<div align="center">
+# LibKon
+KonStructEd is based on the bedrock Rust library libkon, which is used to parse
+Lua CST!! (not AST) for the purpose of structure editing. Why should this exist?
+Read on...
 
-  <h1><code>wasm-pack-template</code></h1>
+# Design
+Conventional parsers must be modified to create an effective structure editor.
 
-  <strong>A template for kick starting a Rust and WebAssembly project using <a href="https://github.com/rustwasm/wasm-pack">wasm-pack</a>.</strong>
+Most parsers create an AST (abstract syntax tree), but structure parsers create
+a CST (concrete syntax tree). This is because the parser must take note of
+things that affect the code appearance and not just the code output.
 
-  <p>
-    <a href="https://travis-ci.org/rustwasm/wasm-pack-template"><img src="https://img.shields.io/travis/rustwasm/wasm-pack-template.svg?style=flat-square" alt="Build Status" /></a>
-  </p>
+It can also skip over the entire parsing phase where the AST is turned into a
+computer program, and all parts of parsing geared exclusively towards those
+ends. Things such as parsing numbers or unescaping strings are totally optional.
+The parser will never evaluate the code in question, but it can possibly be
+integrated with "smart" features in an IDE-like way, by translating from CST
+into AST or text.
 
-  <h3>
-    <a href="https://rustwasm.github.io/docs/wasm-pack/tutorials/npm-browser-packages/index.html">Tutorial</a>
-    <span> | </span>
-    <a href="https://discordapp.com/channels/442252698964721669/443151097398296587">Chat</a>
-  </h3>
+The parser should provide error feedback, but should almost NEVER give up when
+creating structure. Instead, it should use sane fallbacks as to always create an
+editable CST, within reason. Every CST should correspond almost 1:1 with
+corresponding code, whether that code is valid or invalid.
 
-  <sub>Built with 🦀🕸 by <a href="https://rustwasm.github.io/">The Rust and WebAssembly Working Group</a></sub>
-</div>
+## Special CST Nodes/Properties
+The CST has nodes and properties of nodes that wouldn't reasonably exist in an
+AST, for the reasons above. These include, but are not limited to:
+ - Comments: All comments are editable text nodes.
+ - Parens: Even when parens have no functional purpose, they should be preserved
+   to some extent for clarity.
+ - Placeholder: A node for anything that should be there, but isn't.
+ - Whitespace: Newlines and line breaks should be taken note of. Every
+   expression/subexpression is either written vertically or horizontally.
+ - Implied operator: When two values are next to each other, a placeholder
+   "implied operator" sits between them.
+ - Unmatched: Unmatched parens should find the nearest valid implied paren, but
+   never fail unless it's totally impossible. The CST must take note of the fact
+   that it is unmatched.
+ - Unknown: Any region of code that can't be reasonably solved is "Unknown" and
+   can be edited as text.
+ - Extension nodes: Common patterns exist within code that can be defined in a
+   special structure-only node. These would likely be created using plugins, and
+   could appear in many ways in the structure editing UI, marked either by
+   special comments or by a specific structure match.
 
-## About
-
-[**📚 Read this template tutorial! 📚**][template-docs]
-
-This template is designed for compiling Rust libraries into WebAssembly and
-publishing the resulting package to NPM.
-
-Be sure to check out [other `wasm-pack` tutorials online][tutorials] for other
-templates and usages of `wasm-pack`.
-
-[tutorials]: https://rustwasm.github.io/docs/wasm-pack/tutorials/index.html
-[template-docs]: https://rustwasm.github.io/docs/wasm-pack/tutorials/npm-browser-packages/index.html
-
-## 🚴 Usage
-
-### 🐑 Use `cargo generate` to Clone this Template
-
-[Learn more about `cargo generate` here.](https://github.com/ashleygwilliams/cargo-generate)
-
-```
-cargo generate --git https://github.com/rustwasm/wasm-pack-template.git --name my-project
-cd my-project
-```
-
-### 🛠️ Build with `wasm-pack build`
-
-```
-wasm-pack build
-```
-
-### 🔬 Test in Headless Browsers with `wasm-pack test`
-
-```
-wasm-pack test --headless --firefox
-```
-
-### 🎁 Publish to NPM with `wasm-pack publish`
-
-```
-wasm-pack publish
-```
-
-## 🔋 Batteries Included
-
-* [`wasm-bindgen`](https://github.com/rustwasm/wasm-bindgen) for communicating
-  between WebAssembly and JavaScript.
-* [`console_error_panic_hook`](https://github.com/rustwasm/console_error_panic_hook)
-  for logging panic messages to the developer console.
-* `LICENSE-APACHE` and `LICENSE-MIT`: most Rust projects are licensed this way, so these are included for you
-
-## License
-
-Licensed under either of
-
-* Apache License, Version 2.0, ([LICENSE-APACHE](LICENSE-APACHE) or http://www.apache.org/licenses/LICENSE-2.0)
-* MIT license ([LICENSE-MIT](LICENSE-MIT) or http://opensource.org/licenses/MIT)
-
-at your option.
-
-### Contribution
-
-Unless you explicitly state otherwise, any contribution intentionally
-submitted for inclusion in the work by you, as defined in the Apache-2.0
-license, shall be dual licensed as above, without any additional terms or
-conditions.
+## Unparser
+The "unparser" or serializer is used to write the edited structure back to
+source text. In practice, it has to act much like a prettifier.
