@@ -1,6 +1,6 @@
 import { createSignal, createEffect, on, type Accessor, type Setter } from "solid-js";
 import { unaryOps, binaryOps } from "../parser/defs";
-import { tokenKinds } from "../parser/lexer";
+import { is_ident } from "libkon";
 import { type Expression, makeExpr, isBinop, isUnop } from "../parser/parser";
 import { keymap } from "./keymap";
 
@@ -216,7 +216,7 @@ function deleteSubtreeAtPath(tree: Expression, path: TreePath): Expression {
     function fixTree(tree: Expression): Expression {
         if (tree.kind == "op") {
             // First entry of index list should be identifier
-            if (tree.op == "." && tree.args[0].kind == "string" && tokenKinds.ident(tree.args[0].value)) {
+            if (tree.op == "." && tree.args[0].kind == "string" && is_ident(tree.args[0].value)) {
                 tree = {
                     ...tree,
                     args: [makeExpr.ident(tree.args[0].value), ...tree.args.slice(1)] as any,

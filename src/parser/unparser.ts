@@ -1,4 +1,4 @@
-import { tokenKinds } from "./lexer";
+import { is_ident } from "libkon";
 import { type Expression, getPrecedence } from "./parser";
 
 export function treeToString(tree: Expression): string {
@@ -36,7 +36,7 @@ export function treeToString(tree: Expression): string {
                 // For string indexes, treat them as identifiers
                 args = treeToString(tree.args[0]) +
                     tree.args.slice(1).map((v,i) =>
-                        (v.kind == "string" && tokenKinds.ident(v.value))
+                        (v.kind == "string") && is_ident(v.value)
                         ? '.' + v.value
                         : '[' + treeToString(v) + ']')
                         .join('');

@@ -1,4 +1,4 @@
-import { lexString, type Token } from './lexer';
+import { lex_tokens, Operator, operator_to_string } from 'libkon';
 import { unaryOps, binaryOps, type UnaryOp as LangUnaryOp, type BinaryOp as LangBinaryOp } from './defs';
 
 const specialOps = {
@@ -6,6 +6,22 @@ const specialOps = {
     "funCall": true,
     "unknown": true,
 };
+
+type Token =
+    | "Unknown"
+    | {Number: string}
+    | {Bool: boolean}
+    | {String: string}
+    | {Ident: string}
+    | {Operator: Operator}
+    | "Nil"
+    | "LineBreak"
+    | {Comment: string}
+    | "LParen"
+    | "RParen"
+    | "Comma"
+    | "Dot"
+    | string
 
 export type SpecialOp = keyof typeof specialOps;
 export type UnaryOp = LangUnaryOp;
@@ -20,7 +36,7 @@ const UNKNOWN_PRECEDENCE = 4; // for implied binops, what precedence to use
 
 export type Expression =
     | {kind: "placeholder"}
-    | {kind: "number", value: number}
+    | {kind: "number", value: string}
     | {kind: "ident", value: string}
     | {kind: "string", value: string}
     | {kind: "unknown", value: string, error?: any }
@@ -42,7 +58,7 @@ export type EUnaryOp = Extract<Expression, {kind: "op", op: UnaryOp}>;
 
 export function stringToTree(str: string): Expression {
     try {
-        const tokens = new TokenIter(lexString(str));
+        const tokens = new TokenIter(lex_tokens(str));
         const tree = parseExpression(tokens);
         return tree;
     } catch (err) {
@@ -60,43 +76,40 @@ function parseExpression(tokens: TokenIter, flags: ParseExprFlags = {}): Express
     let token;
     while ((token = tokens.next())) {
         const leaf = getLastLeaf(tree);
-        switch (token.kind) {
-            case "symbol": {
-                if (token.text == '(') {
-                    const expr = parseExpression(tokens, {...flags, parenthesized: true});
-                    if ('parenthesized' in expr) expr.parenthesized = true;
-                    tree = appendParenthesized(tree, expr);
-                } else if (('parenthesized' in flags || 'list' in flags) && token.text == ')') {
-                    return tree;
-                } else {
-                    throw new Error(`Unexpected symbol ${token.text}`);
-                }
-            }
-            break;
-            case "number":
-            case "ident":
-            case "string":
-                tree = appendValue(tree, makeExpr[token.kind](token.text));
-                break;
-            case "operator": {
+        if (typeof(token) == "object") {
+            if ('Number' in token) {
+                tree = appendValue(tree, makeExpr.number(token.Number));
+            } else if ('String' in token) {
+                tree = appendValue(tree, makeExpr.string(token.String));
+            } else if ('Ident' in token) {
+                tree = appendValue(tree, makeExpr.ident(token.Ident));
+            } else if ('Operator' in token) {
+                const op = operator_to_string(token.Operator);
                 // Resolve ambiguous operators like '-' with the simple rule
                 // that, if the rightmost subtree (the only subtree active in
                 // parsing) is empty, it follows that there is no left value,
                 // therefore the operator is unary.
-                if (isUnop(token.text) && leaf.kind == "placeholder") {
-                    const node = makeExpr.unop(token.text, makeExpr.placeholder());
+                if (isUnop(op) && leaf.kind == "placeholder") {
+                    const node = makeExpr.unop(op, makeExpr.placeholder());
                     tree = appendValue(tree, node);
-                } else if (isBinop(token.text)) {
-                    tree = appendBinaryOp(tree, token.text);
+                } else if (isBinop(op)) {
+                    tree = appendBinaryOp(tree, op);
                 } else {
-                    throw new Error(`Could not resolve op arity '${token.text}'`);
+                    throw new Error(`Could not resolve op arity '${token.Operator}'`);
                 }
-                break;
             }
-            case "keyword":
-                throw new Error(`Unhandled keyword '${token.text}'`);
-            default:
-                throw new Error(`Unhandled token '${token.text}'`);
+        } else if (token == "LParen") {
+            const expr = parseExpression(tokens, {...flags, parenthesized: true});
+            if ('parenthesized' in expr) expr.parenthesized = true;
+            tree = appendParenthesized(tree, expr);
+        } else if (('parenthesized' in flags || 'list' in flags) && token == "RParen") {
+            return tree;
+        } else if (token == "Comma") {
+            tree = appendBinaryOp(tree, ",");
+        } else if (token == "Dot") {
+            tree = appendBinaryOp(tree, ".");
+        } else {
+            throw new Error(`Unhandled token '${token}'`);
         }
     }
 
@@ -249,7 +262,7 @@ export const makeExpr = {
     }),
     number: (text: string | number): EKind<"number"> => ({
         kind: "number",
-        value: Number(text),
+        value: text,
     }),
     ident: (text: string): EKind<"ident"> => ({
         kind: "ident",
