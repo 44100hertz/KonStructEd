@@ -18,12 +18,6 @@ There are a few reasons why I'm not happy with structure editors as they current
 2. They can't parse erroneous code into editable structures, with 1:1 mapping between the code and structure, such that structure => code => structure transformations always yield the same result, _even with syntax errors in the code._
 3. They often can't edit conventional programming languages. We generally have structure editors for Lisp, for custom DSLs designed for structure editing, and not much else.
 
-## Will this be a production app?
-
-The idea is to find what is possible in structure editing. To expand the design surface of structure editing and overcome the apparent limitations. Over time, this editor will encompass larger and larger subsets of Lua, becoming more and more useful. It could at least become a web component for inline structure editing of Lua code.
-
-If I end up designing an app that makes editing code more fast, fun, and enjoyable than text editing, then I have a feeling this problem will solve itself. People with more time than me will see this app as a paradigm shifter and create similar editors for other languages and use-cases. All I have to do is make the editor, show it off, and let the marketplace of ideas do the work.
-
 ## Where can I learn more?
 
 I'm working on a paper on the design of structure editors, which I will release at some point. No, it's not for school. It's to clarify what's going on here, and maybe shift consciousness around some of these potentials. Thanks for for interest, and please let me know what you think.
