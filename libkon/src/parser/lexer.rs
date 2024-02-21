@@ -8,7 +8,7 @@ use crate::cst::Operator;
 // 4. Use a custom lexer instead of nom
 //
 // Potential features:
-// 1. Guess that string ends at line, return custom type
+// 1. Guess that string ends at line, return custom type for incomplete strings
 
 use nom::{
     IResult,
@@ -21,8 +21,6 @@ use nom::{
         char as nom_char,
         one_of,
         satisfy,
-        alpha1,
-        alphanumeric1,
         digit0,
         digit1,
         hex_digit0,
@@ -196,10 +194,10 @@ fn lex_multiline_comment(input: &str) -> IResult<&str, Token> {
 pub fn name(input: &str) -> IResult<&str, String> {
     map(
         pair(
-            alt((alpha1, tag("_"))),
-            many0(alt((alphanumeric1, tag("_")))),
+            satisfy(|c: char| c.is_alphabetic() || c == '_'),
+            many0(satisfy(|c: char| c.is_alphanumeric() || c == '_')),
         ),
-        |(s, ss): (&str, Vec<&str>)| s.to_string() + &ss.join("")
+        |(s, ss): (char, Vec<char>)| s.to_string() + ss.iter().collect::<String>().as_str()
     )(input)
 }
 
