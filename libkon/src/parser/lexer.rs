@@ -236,16 +236,24 @@ fn lex_exponent<'a>(letters: &'a str) -> impl FnMut(&'a str) -> IResult<&'a str,
 fn lex_string(input: &str) -> IResult<&str, Token> {
     one_of("'\"")(input).and_then(
         |(rest, delim)| {
-            let inner_char = satisfy(|c: char| c != delim && c != '\\' && c != '\n');
+            let inner_char = satisfy(|c: char| c != delim && c != '\n');
             map(
                 terminated(
                     recognize(many0(alt((
+                        // Escaped quote
+                        recognize(pair(
+                            nom_char('\\'),
+                            one_of("'\""),
+                        )),
+                        // Z escape
+                        recognize(pair(
+                            tag("\\z"),
+                            many0(satisfy(|c| c.is_whitespace()))
+                        )),
+                        // Literal backslash
+                        tag("\\\\"),
+                        // String char
                         recognize(inner_char),
-                        //lex_decimal_string_escape,
-                        lex_hex_string_escape,
-                        lex_unicode_string_escape,
-                        lex_string_escape,
-                        lex_z_escape,
                     )))),
                     nom_char(delim)
                 ),
@@ -269,57 +277,6 @@ fn lex_multiline_string(input: &str) -> IResult<&str, Token> {
         })
 }
 
-
-fn lex_string_escape(input: &str) -> IResult<&str, &str> {
-    alt((
-        tag("\\a"),
-        tag("\\b"),
-        tag("\\f"),
-        tag("\\n"),
-        tag("\\r"),
-        tag("\\t"),
-        tag("\\v"),
-        tag("\\'"),
-        tag("\\\""),
-        tag("\\\\"),
-    ))(input)
-}
-
-fn lex_z_escape(input: &str) -> IResult<&str, &str> {
-    map(pair(
-        tag("\\z"),
-        many0(satisfy(|c| c.is_whitespace() || c == '\n'))
-    ), |_| "\\z\n")(input)
-}
-
-// // Not needed, since the char code is not actually parsed
-// fn lex_decimal_string_escape(input: &str) -> IResult<&str, String> {
-//     map(
-//         pair(
-//             tag("\\"),
-//             many_m_n(1, 3, satisfy(|c| c.is_digit(10)))
-//         ), |(_, s): (&str, Vec<char>)| "\\".to_string() + &s.iter().collect::<String>()
-//     )(input)
-// }
-
-fn lex_hex_string_escape(input: &str) -> IResult<&str, &str> {
-    recognize(
-        pair(
-            tag("\\x"),
-            many_m_n(2, 2, satisfy(|c| c.is_digit(16)))
-        )
-    )(input)
-}
-
-fn lex_unicode_string_escape(input: &str) -> IResult<&str, &str> {
-    recognize(
-        tuple((
-            tag("\\u{"),
-            hex_digit1,
-            tag("}"),
-        ))
-    )(input)
-}
 
 fn lex_goto_label(input: &str) -> IResult<&str, Token> {
     map(
