@@ -2,13 +2,13 @@ use serde::Serialize;
 use crate::cst::Operator;
 
 // Potential optimizations:
-// 1. Reduce heap allocation on strings, prefer &str
-// 2. Deal with line endings instead of just replacing them (dubious)
+// DONE: 1. Reduce heap allocation on strings, prefer &str
+// DONE: 2. Deal with line endings instead of just replacing them (dubious)
 // 3. Only try to replace idents with keywords, instead of scanning for all keywords
-// 4. Use a custom lexer instead of nom
 //
-// Potential features:
+// Missing features:
 // 1. Guess that string ends at line, return custom type for incomplete strings
+// 2. Trim off windows line endings in multiline strings
 
 use nom::{
     IResult,
@@ -18,14 +18,13 @@ use nom::{
         take_until,
     },
     character::complete::{
-        char as nom_char,
         one_of,
         satisfy,
         digit0,
         digit1,
         hex_digit0,
         hex_digit1,
-        space0,
+        line_ending,
     },
     multi::{many0, many_m_n},
     branch::alt,
@@ -34,19 +33,19 @@ use nom::{
 };
 
 #[derive(Clone, Serialize)]
-pub enum Token {
-    Unknown(String),
-    Number(String),
+pub enum Token<'a> {
+    Unknown(&'a str),
+    Number(&'a str),
     Bool(bool),
-    String(String),
-    Ident(String),
+    String(&'a str),
+    Ident(&'a str),
     Operator(Operator),
-    GotoLabel(String),
+    GotoLabel(&'a str),
     Nil,
 
     // CST specific
     LineBreak,
-    Comment(String),
+    Comment(&'a str),
 
     // Keywords
     Break,
@@ -81,21 +80,17 @@ pub enum Token {
 }
 
 pub fn lex_tokens(input: &str) -> Vec<Token> {
-    let clean_input = input.replace("\r\n", "\n").replace("\r", "\n");
-    match lex_clean(clean_input.as_str()) {
+    let space = || many0(satisfy(|c| c.is_whitespace() && c != '\n'));
+    let mut lex = all_consuming(many0(delimited(space(), lex_token, space())));
+    match lex(input) {
         Ok((_, tokens)) => tokens,
-        Err(_) => vec![Token::Unknown(input.to_string())],
+        Err(_) => vec![Token::Unknown(input)],
     }
-}
-
-fn lex_clean(input: &str) -> IResult<&str, Vec<Token>> {
-    let space = || alt((space0, tag(";")));
-    all_consuming(many0(delimited(space(), lex_token, space())))(input)
 }
 
 pub fn lex_token(input: &str) -> IResult<&str, Token> {
     alt((
-        value(Token::LineBreak, nom_char('\n')),
+        value(Token::LineBreak, line_ending),
         lex_multiline_comment,
         lex_multiline_string,
         lex_goto_label,
@@ -176,7 +171,7 @@ fn lex_symbol(input: &str) -> IResult<&str, Token> {
 fn lex_comment(input: &str) -> IResult<&str, Token> {
     map(
         preceded(tag("--"), is_not("\n")),
-        |s: &str| Token::Comment(s.to_string())
+        |s: &str| Token::Comment(s)
     )(input)
 }
 
@@ -187,7 +182,7 @@ fn lex_multiline_comment(input: &str) -> IResult<&str, Token> {
             take_until("]]"),
             tag("]]"),
         ),
-        |s: &str| Token::Comment(s.to_string())
+        |s: &str| Token::Comment(s)
     )(input)
 }
 
@@ -198,8 +193,8 @@ pub fn name(input: &str) -> IResult<&str, &str> {
     ))(input)
 }
 
-pub fn lex_ident(input: &str) -> IResult<&str, Token> {
-    map(name, |s| Token::Ident(s.to_string()))(input)
+fn lex_ident(input: &str) -> IResult<&str, Token> {
+    map(name, |s| Token::Ident(s))(input)
 }
 
 fn lex_decimal(input: &str) -> IResult<&str, Token> {
@@ -211,7 +206,7 @@ fn lex_decimal(input: &str) -> IResult<&str, Token> {
         )),
         opt(lex_exponent("eEpP")),
     )),
-        |s| Token::Number(s.to_string())
+        |s| Token::Number(s)
     )(input)
 }
 
@@ -225,7 +220,7 @@ fn lex_hexnum(input: &str) -> IResult<&str, Token> {
         )),
         opt(lex_exponent("pP")),
     ))),
-        |s: &str| Token::Number(s.to_string())
+        |s: &str| Token::Number(s)
     )(input)
 }
 
@@ -243,13 +238,13 @@ fn lex_string(input: &str) -> IResult<&str, Token> {
             lex_string_delim('"'),
             lex_string_delim('\''),
         ))),
-        |s: &str| Token::String(s.to_string())
+        |s: &str| Token::String(s)
     )(input)
 }
 
 fn lex_multiline_string(input: &str) -> IResult<&str, Token> {
     // Must match same number of '=' on opening and closing delims
-    tuple((tag("["), many0(tag("=")), tag("["), opt(nom_char('\n'))))(input)
+    tuple((tag("["), many0(tag("=")), tag("["), opt(line_ending)))(input)
         .and_then(|(rest, (_, equ, _, _)): (&str, (_, Vec<&str>, _, _))| {
             let ending = || format!("]{}]", equ.join(""));
             map(
@@ -257,7 +252,7 @@ fn lex_multiline_string(input: &str) -> IResult<&str, Token> {
                     take_until(ending().as_str()),
                     tag(ending().as_str())
                 )),
-                |s: &str| Token::String(s.to_string())
+                |s: &str| Token::String(s)
             )(rest)
         })
 }
@@ -338,7 +333,7 @@ fn lex_goto_label(input: &str) -> IResult<&str, Token> {
             name,
             tag("::"),
         ),
-        |s: &str| Token::GotoLabel(s.to_string())
+        |s: &str| Token::GotoLabel(s)
     )(input)
 }
 

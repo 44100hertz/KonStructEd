@@ -7,11 +7,11 @@ use wasm_bindgen::prelude::*;
 pub use cst::Operator;
 pub use parser::lexer::Token;
 pub use parser::unparser::operator_to_string;
-pub use parser::lexer::lex_ident;
+pub use parser::lexer::name;
 
 #[wasm_bindgen]
 pub fn is_ident(input: &str) -> bool {
-    lex_ident(input).is_ok()
+    name(input).is_ok()
 }
 
 #[wasm_bindgen]
