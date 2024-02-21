@@ -6,6 +6,7 @@ use nom::{
     bytes::complete::{
         tag,
         is_not,
+        take_until,
     },
     character::complete::{
         one_of,
@@ -82,7 +83,7 @@ pub fn lex_tokens(input: &str) -> Vec<Token> {
 pub fn lex_token(input: &str) -> IResult<&str, Token> {
     alt((
         value(Token::LineBreak, line_ending),
-        // TODO: lex_multiline_comment
+        lex_multiline_comment,
         lex_comment,
         lex_hexnum,
         lex_decimal,
@@ -93,13 +94,6 @@ pub fn lex_token(input: &str) -> IResult<&str, Token> {
         lex_keyword,
         lex_ident,
     ))(input)
-}
-
-fn lex_comment(input: &str) -> IResult<&str, Token> {
-    map(
-        preceded(tag("--"), is_not("\n\r")),
-        |s: &str| Token::Comment(s.to_string())
-    )(input)
 }
 
 fn lex_keyword(input: &str) -> IResult<&str, Token> {
@@ -162,6 +156,24 @@ fn lex_symbol(input: &str) -> IResult<&str, Token> {
         value(Token::Dot,       tag(".")),
         value(Token::DotDotDot, tag("...")),
     ))(input)
+}
+
+fn lex_multiline_comment(input: &str) -> IResult<&str, Token> {
+    map(
+        delimited(
+            tag("--[["),
+            take_until("]]"),
+            tag("]]"),
+        ),
+        |s: &str| Token::Comment(s.to_string())
+    )(input)
+}
+
+fn lex_comment(input: &str) -> IResult<&str, Token> {
+    map(
+        preceded(tag("--"), is_not("\n\r")),
+        |s: &str| Token::Comment(s.to_string())
+    )(input)
 }
 
 pub fn lex_ident(input: &str) -> IResult<&str, Token> {
