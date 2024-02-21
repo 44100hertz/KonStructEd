@@ -11,7 +11,7 @@
 
     font-family: Fira sans;
     text-shadow: 0px 1px 2px black;
-    white-space: nowrap;
+    white-space: pre;
 
     background: lch(35 50 calc(40 * var(--depth) + 20));
     border-radius: 0.5em;
@@ -35,8 +35,17 @@
 
 .node.ident { font-style: italic }
 .node.number { font-weight: bold }
-.node.string::before {content: "‘";}
-.node.string::after {content: "’";}
+.node.string {
+    text-align: left;
+    padding-left: 0.5em;
+}
+.node.string::before {
+    content: "\"";
+    position: relative;
+    left: -0.4em;
+    margin-right: -0.4em;
+    color: white;
+}
 
 .node.unknown {background: black;}
 .error {margin: 1em 0; color: red;}
@@ -50,7 +59,6 @@
 .node.indexList > .args > * > .node {
     border: none;
     box-shadow: none;
-    padding: 0.2em;
     border: 0.1em solid #fff4;
 }
 .node.indexList > .args > :not(:first-child) { display: flex; align-items: end; }
