@@ -18,6 +18,7 @@ use nom::{
         take_until,
     },
     character::complete::{
+        char as nom_char,
         one_of,
         satisfy,
         digit0,
@@ -233,47 +234,41 @@ fn lex_exponent<'a>(letters: &'a str) -> impl FnMut(&'a str) -> IResult<&'a str,
 }
 
 fn lex_string(input: &str) -> IResult<&str, Token> {
-    map(
-        recognize(alt((
-            lex_string_delim('"'),
-            lex_string_delim('\''),
-        ))),
-        |s: &str| Token::String(s)
-    )(input)
-}
-
-fn lex_multiline_string(input: &str) -> IResult<&str, Token> {
-    // Must match same number of '=' on opening and closing delims
-    tuple((tag("["), many0(tag("=")), tag("["), opt(line_ending)))(input)
-        .and_then(|(rest, (_, equ, _, _)): (&str, (_, Vec<&str>, _, _))| {
-            let ending = || format!("]{}]", equ.join(""));
+    one_of("'\"")(input).and_then(
+        |(rest, delim)| {
+            let inner_char = satisfy(|c: char| c != delim && c != '\\' && c != '\n');
             map(
-                recognize(terminated(
-                    take_until(ending().as_str()),
-                    tag(ending().as_str())
-                )),
+                terminated(
+                    recognize(many0(alt((
+                        recognize(inner_char),
+                        //lex_decimal_string_escape,
+                        lex_hex_string_escape,
+                        lex_unicode_string_escape,
+                        lex_string_escape,
+                        lex_z_escape,
+                    )))),
+                    nom_char(delim)
+                ),
                 |s: &str| Token::String(s)
             )(rest)
         })
 }
 
-fn lex_string_delim<'a>(delim: char) -> impl FnMut(&'a str) -> IResult<&'a str, &'a str> {
-    let inner_char = satisfy(move |c: char| c != delim && c != '\\' && c != '\n');
-    recognize(
-        delimited(
-            satisfy(move |c: char| c == delim),
-            many0(alt((
-                recognize(inner_char),
-                //lex_decimal_string_escape,
-                lex_hex_string_escape,
-                lex_unicode_string_escape,
-                lex_string_escape,
-                lex_z_escape,
-            ))),
-            satisfy(move |c: char| c == delim),
-        ),
-    )
+fn lex_multiline_string(input: &str) -> IResult<&str, Token> {
+    // Must match same number of '=' on opening and closing delims
+    tuple((tag("["), recognize(many0(nom_char('='))), tag("["), opt(line_ending)))(input)
+        .and_then(|(rest, (_, equ, _, _)): (&str, (_, &str, _, _))| {
+            let ending = || format!("]{}]", equ);
+            map(
+                terminated(
+                    recognize(take_until(ending().as_str())),
+                    tag(ending().as_str())
+                ),
+                |s: &str| Token::String(s)
+            )(rest)
+        })
 }
+
 
 fn lex_string_escape(input: &str) -> IResult<&str, &str> {
     alt((
