@@ -1,6 +1,15 @@
 use serde::Serialize;
 use crate::cst::Operator;
 
+// Potential optimizations:
+// 1. Reduce heap allocation on strings, prefer &str
+// 2. Deal with line endings instead of just replacing them (dubious)
+// 3. Only try to replace idents with keywords, instead of scanning for all keywords
+// 4. Use a custom lexer instead of nom
+//
+// Potential features:
+// 1. Guess that string ends at line, return custom type
+
 use nom::{
     IResult,
     bytes::complete::{
@@ -9,6 +18,7 @@ use nom::{
         take_until,
     },
     character::complete::{
+        char as nom_char,
         one_of,
         satisfy,
         alpha1,
@@ -18,11 +28,11 @@ use nom::{
         hex_digit0,
         hex_digit1,
         space0,
-        line_ending,
+        multispace0,
     },
     multi::{many0, many_m_n},
     branch::alt,
-    sequence::{preceded, delimited, pair, tuple},
+    sequence::{preceded, delimited, terminated, pair, tuple},
     combinator::{map, value, opt, all_consuming},
 };
 
@@ -34,6 +44,7 @@ pub enum Token {
     String(String),
     Ident(String),
     Operator(Operator),
+    GotoLabel(String),
     Nil,
 
     // CST specific
@@ -73,22 +84,28 @@ pub enum Token {
 }
 
 pub fn lex_tokens(input: &str) -> Vec<Token> {
-    let space = || alt((space0, tag(";")));
-    match all_consuming(many0(delimited(space(), lex_token, space())))(input) {
+    let clean_input = input.replace("\r\n", "\n").replace("\r", "\n");
+    match lex_clean(clean_input.as_str()) {
         Ok((_, tokens)) => tokens,
         Err(_) => vec![Token::Unknown],
     }
 }
 
+fn lex_clean(input: &str) -> IResult<&str, Vec<Token>> {
+    let space = || alt((space0, tag(";")));
+    all_consuming(many0(delimited(space(), lex_token, space())))(input)
+}
+
 pub fn lex_token(input: &str) -> IResult<&str, Token> {
     alt((
-        value(Token::LineBreak, line_ending),
+        value(Token::LineBreak, nom_char('\n')),
         lex_multiline_comment,
+        lex_multiline_string,
+        lex_goto_label,
         lex_comment,
         lex_hexnum,
         lex_decimal,
         lex_string,
-        // TODO: lex_multiline_string,
         lex_operator,
         lex_symbol,
         lex_keyword,
@@ -158,6 +175,13 @@ fn lex_symbol(input: &str) -> IResult<&str, Token> {
     ))(input)
 }
 
+fn lex_comment(input: &str) -> IResult<&str, Token> {
+    map(
+        preceded(tag("--"), is_not("\n")),
+        |s: &str| Token::Comment(s.to_string())
+    )(input)
+}
+
 fn lex_multiline_comment(input: &str) -> IResult<&str, Token> {
     map(
         delimited(
@@ -169,21 +193,18 @@ fn lex_multiline_comment(input: &str) -> IResult<&str, Token> {
     )(input)
 }
 
-fn lex_comment(input: &str) -> IResult<&str, Token> {
-    map(
-        preceded(tag("--"), is_not("\n\r")),
-        |s: &str| Token::Comment(s.to_string())
-    )(input)
-}
-
-pub fn lex_ident(input: &str) -> IResult<&str, Token> {
+pub fn name(input: &str) -> IResult<&str, String> {
     map(
         pair(
             alt((alpha1, tag("_"))),
             many0(alt((alphanumeric1, tag("_")))),
         ),
-        |(s, ss): (&str, Vec<&str>)| Token::Ident(s.to_string() + &ss.join(""))
+        |(s, ss): (&str, Vec<&str>)| s.to_string() + &ss.join("")
     )(input)
+}
+
+pub fn lex_ident(input: &str) -> IResult<&str, Token> {
+    map(name, |n| Token::Ident(n))(input)
 }
 
 fn lex_decimal(input: &str) -> IResult<&str, Token> {
@@ -236,20 +257,30 @@ fn lex_string(input: &str) -> IResult<&str, Token> {
     )(input)
 }
 
+fn lex_multiline_string(input: &str) -> IResult<&str, Token> {
+    // Must match same number of '=' on opening and closing delims
+    tuple((tag("["), many0(tag("=")), tag("["), opt(nom_char('\n'))))(input)
+        .and_then(|(rest, (_, equ, _, _)): (&str, (_, Vec<&str>, _, _))| {
+            let ending = || format!("]{}]", equ.join(""));
+            map(terminated(
+                take_until(ending().as_str()),
+                tag(ending().as_str())
+            ), |s: &str| Token::String(s.to_string()))(rest)
+        })
+}
+
 fn lex_string_delim<'a>(delim: char) -> impl FnMut(&'a str) -> IResult<&'a str, String> {
     let inner_char = satisfy(move |c: char| c != delim && c != '\\' && c != '\n');
     map(
         delimited(
             satisfy(move |c: char| c == delim),
             many0(alt((
-                // TODO (long term): reduce heap allocation on string
                 map(inner_char, |c: char| c.to_string()),
                 //lex_decimal_string_escape,
                 lex_hex_string_escape,
                 lex_unicode_string_escape,
                 lex_string_escape,
-                // TODO: lex_z_escape,
-                // The escape sequence '\z' skips the following span of white-space characters, including line breaks
+                lex_z_escape,
             ))),
             satisfy(move |c: char| c == delim),
         ),
@@ -275,7 +306,14 @@ fn lex_string_escape(input: &str) -> IResult<&str, String> {
     )(input)
 }
 
-// Not needed, since the char code is not actually parsed
+fn lex_z_escape(input: &str) -> IResult<&str, String> {
+    map(pair(
+        tag("\\z"),
+        multispace0,
+    ), |_| "\\z\n".to_string())(input)
+}
+
+// // Not needed, since the char code is not actually parsed
 // fn lex_decimal_string_escape(input: &str) -> IResult<&str, String> {
 //     map(
 //         pair(
@@ -305,14 +343,13 @@ fn lex_unicode_string_escape(input: &str) -> IResult<&str, String> {
     )(input)
 }
 
-// TODO Multiline Comment
-// --[[ ... ]]
-
-// TODO
-// Multiline string:
-// "when the opening long bracket is immediately followed by a newline, the newline is not included in the string"
-// [==[ ... ]==] <- No escape sequence either
-// Any number of equals signs. Converts \r\n into just \n.
-//
-// TODO
-// Label ::Ident::
+fn lex_goto_label(input: &str) -> IResult<&str, Token> {
+    map(
+        delimited(
+            tag("::"),
+            name,
+            tag("::"),
+        ),
+        |s: String| Token::GotoLabel(s)
+    )(input)
+}
