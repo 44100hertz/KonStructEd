@@ -1,12 +1,9 @@
 import { createEffect, onMount, onCleanup } from "solid-js";
 import { stringToTree } from "~/parser/parser";
-import { treeToString } from "~/parser/unparser";
+//import { treeToString } from "~/parser/unparser";
 import { Tree } from "~/editor/tree";
-import init from "libkon";
 import ExpressionNode from "~/components/ExpressionNode";
 import "./style.css";
-
-await init();
 
 export default function Editor() {
     const tree = new Tree();
@@ -15,23 +12,24 @@ export default function Editor() {
     function reparse(ev: any) {
       if (textArea) {
         tree.setTree(stringToTree(textArea.value));
+        console.log(tree.tree());
       }
     }
 
-    createEffect(() => {
-      const t = tree.tree();
-      if (textArea && textArea !== document.activeElement) {
-        textArea.value = treeToString(t)
-      }
-    })
+  /* createEffect(() => {
+   *   const t = tree.tree();
+   *   if (textArea && textArea !== document.activeElement) {
+   *     textArea.value = treeToString(t)
+   *   }
+   * }) */
 
-    const placeholder = "10 * math.max(200, 5^5)";
+    const placeholder = "1 + 2 * 3 ^ 4";
     tree.setTree(stringToTree(placeholder));
 
     const _handleKey = (ev: KeyboardEvent) => {
-      if (textArea !== document.activeElement) {
-        tree.handleKey(ev);
-      }
+      /* if (textArea !== document.activeElement) {
+       *   tree.handleKey(ev);
+       * } */
     }
     onMount(() => {
       window.addEventListener('keydown', _handleKey);
@@ -47,7 +45,8 @@ export default function Editor() {
         {placeholder}
       </textarea>
       <div style={{border: "1px solid white", padding: "2em"}}>
-        <ExpressionNode path={[]} tree={tree} node={tree.tree()}/>
+        <StatementNode path={[]} node={tree.tree()}/>
+        {/* <ExpressionNode path={[]} tree={tree} node={tree.tree()}/> */}
       </div>
       <pre />
     </div>

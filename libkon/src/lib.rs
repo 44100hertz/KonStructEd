@@ -1,13 +1,16 @@
-mod parser; // Error-resistent lua CST parser, unparser
-mod cst; // Functions for construction and manipulation of CST
-mod editor; // Tree editing functions, selection, etc.
+mod tree;
+mod lexer;
+mod parser;
+mod unparser;
+mod utils;
 
 use wasm_bindgen::prelude::*;
 
-pub use cst::Operator;
-pub use parser::lexer::Token;
-pub use parser::unparser::operator_to_string;
-pub use parser::lexer::name;
+pub use tree::operator::Operator;
+pub use lexer::Token;
+pub use lexer::name;
+
+use parser::block_from_tokens;
 
 #[wasm_bindgen]
 pub fn is_ident(input: &str) -> bool {
@@ -15,9 +18,20 @@ pub fn is_ident(input: &str) -> bool {
 }
 
 #[wasm_bindgen]
-pub fn lex_tokens(input: &str) -> Result<JsValue, JsValue> {
-    let tokens = parser::lexer::lex_tokens(input);
-    Ok(serde_wasm_bindgen::to_value(&tokens)?)
+pub fn operator_to_string(op: Operator) -> String {
+    op.to_symbol().to_string()
+}
+
+#[wasm_bindgen]
+pub fn get_precedence(op: Operator) -> u8 {
+    op.precedence()
+}
+
+#[wasm_bindgen]
+pub fn string_to_tree(input: &str) -> Result<JsValue, JsValue> {
+    let tokens = lexer::lex_tokens(input);
+    let tree = block_from_tokens(tokens.as_slice());
+    Ok(serde_wasm_bindgen::to_value(&tree)?)
 }
 
 // #[wasm_bindgen]
